@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor
+from langchain.agents import load_tools
 
 # import tools
 from tools import get_word_length
@@ -13,12 +14,12 @@ from tools import get_word_length
 # Load environment variables from .env file
 load_dotenv()
 
-chat_history = []
-
 # Define the LLM to use
 llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
 
 tools = [get_word_length]
+requests_tools = load_tools(["requests_all"])
+tools = tools + requests_tools
 
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
@@ -51,13 +52,26 @@ agent = (
 )
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-# Run the agent
-input1 = "how many letters in the word educa?"
-result = agent_executor.invoke({"input": input1, "chat_history": chat_history})
-chat_history.extend(
-    [
-        HumanMessage(content=input1),
-        AIMessage(content=result["output"]),
-    ]
-)
-agent_executor.invoke({"input": "is that a real word?", "chat_history": chat_history})
+chat_history = []
+
+while True:
+    # Get user input
+    user_task = input("Enter your query (or type 'exit' to quit): ")
+    
+    # Check if the user wants to exit
+    if user_task.lower() == 'exit':
+        break
+
+    # Process the input using the agent
+    result = agent_executor.invoke({"input": user_task, "chat_history": chat_history})
+    
+    # Append the conversation to the chat history
+    chat_history.extend(
+        [
+            HumanMessage(content=user_task),
+            AIMessage(content=result["output"]),
+        ]
+    )
+    
+    # Display the result
+    print("Agent Response:", result["output"])
