@@ -1,6 +1,10 @@
 import os
+from dotenv import load_dotenv
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+
+# Load environment variables from .env file
+load_dotenv()
 
 def authenticate_gmail_api():
     """Authenticate with the Gmail API using credentials from environment variables."""
