@@ -4,6 +4,8 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"  # Adjust the port as needed
+      - "8000:8000"
     env_file:
       - .env
+    stdin_open: true  # Keep stdin open
+    tty: true         # Allocate a pseudo-TTY

@@ -1,4 +1,4 @@
-from TARS.email_module.oauth_setup import setup_oauth
+from email_module.oauth_setup import setup_oauth
 
 def main():
     print("Main before setup_oauth()")

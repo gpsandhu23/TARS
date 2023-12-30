@@ -2,15 +2,13 @@
 
 import os
 import pickle
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 
 def setup_oauth():
     client_id = os.getenv("GMAIL_CLIENT_ID")
     client_secret = os.getenv("GMAIL_CLIENT_SECRET")
-    redirect_uri = os.getenv("GMAIL_REDIRECT_URI")
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',
               'https://www.googleapis.com/auth/gmail.compose',
               'https://www.googleapis.com/auth/gmail.modify']
@@ -24,19 +22,25 @@ def setup_oauth():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = Flow.from_client_config(
+            flow = InstalledAppFlow.from_client_config(
                 client_config={
-                    "web": {
+                    "installed": {
                         "client_id": client_id,
                         "client_secret": client_secret,
                         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                         "token_uri": "https://oauth2.googleapis.com/token",
-                        "redirect_uris": [redirect_uri],
+                        "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"],
                     }
                 },
-                scopes=SCOPES
+                scopes=SCOPES,
             )
-            flow.run_local_server(port=0)
+            auth_url, _ = flow.authorization_url(prompt='consent')
+
+            print('Please go to this URL and authorize the application:')
+            print(auth_url)
+            code = input('Enter the authorization code: ')
+            flow.fetch_token(code=code)
+
             creds = flow.credentials
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)

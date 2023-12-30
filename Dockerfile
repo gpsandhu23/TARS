@@ -10,8 +10,11 @@ COPY requirements.txt .
 # Install any dependencies in the requirements file
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your application's code into the container at /app
-COPY TARS/ .
+# Copy the TARS directory into the container at /app/TARS
+COPY TARS/ TARS/
 
-# Command to run on container start. Adjust the file name as necessary
-CMD ["python", "./main.py"]
+# Change the working directory
+WORKDIR /app/TARS
+
+# Command to run your application
+CMD ["python", "main.py"]
