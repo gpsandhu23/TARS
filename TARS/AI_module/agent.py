@@ -9,7 +9,7 @@ from langchain.agents import AgentExecutor
 from langchain.agents import load_tools
 
 # import tools
-from tools import get_word_length
+from tools import get_word_length, handle_all_unread_messages
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,7 +17,7 @@ load_dotenv()
 # Define the LLM to use
 llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
 
-tools = [get_word_length]
+tools = [get_word_length, handle_all_unread_messages]
 requests_tools = load_tools(["requests_all"])
 tools = tools + requests_tools
 

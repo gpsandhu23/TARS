@@ -1,5 +1,21 @@
 import json
+import sys
+import os
+
+# Add the parent directory to sys.path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+
+# Now you can use absolute import
+from email_module.load_creds import authenticate_gmail_api
+from email_module.email_reader import fetch_unread_emails
+from email_module.email_reader import mark_email_as_read
+from email_module.email_reader import get_mime_message
+from email_module.email_reader import get_email_content
+
 from dotenv import load_dotenv
+
+# Lanchain imports
 from langchain.agents import tool
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -86,3 +102,44 @@ def ai_email_handler(classifier_input):
     # Pretty print the JSON object
     # print(json.dumps(json_object, indent=4))
     return json_object
+
+@tool
+def handle_all_unread_messages() -> list:
+    """Handle all unread messages in the inbox and return their details."""
+    service = authenticate_gmail_api()
+    unread_messages = fetch_unread_emails(service)
+
+    all_message_details = []  # List to store details for each email
+
+    for message in unread_messages:
+        msg_id = message['id']
+        mime_msg = get_mime_message(service, 'me', msg_id)
+
+        headers = mime_msg.items()
+        sender = next(value for name, value in headers if name == 'From')
+        subject = next(value for name, value in headers if name == 'Subject')
+        content = get_email_content(mime_msg)
+
+        classifier_input = "Sender: " + str(sender) + " Subject: " + str(subject) + " Email content: " + str(content)
+        ai_response = ai_email_handler(classifier_input)
+
+        # Extract details from ai_response
+        email_details = {
+            'sender': sender,
+            'subject': subject,
+            'summary': ai_response.get('summary', 'N/A'),
+            'action_needed': ai_response.get('action_needed', 'N/A'),
+            'importance': ai_response.get('importance', 'N/A'),
+            'urgency': ai_response.get('urgency', 'N/A'),
+            'action': ai_response.get('action', 'N/A'),
+            'action_instructions': ai_response.get('action_instructions', 'N/A')
+        }
+
+        print(email_details)
+        # Add the details to the list
+        all_message_details.append(email_details)
+
+        # Mark the email as read
+        mark_email_as_read(service, 'me', msg_id)
+
+    return all_message_details
