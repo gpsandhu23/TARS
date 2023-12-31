@@ -1,6 +1,9 @@
 import json
 import sys
 import os
+import requests
+import base64
+import re
 
 # Add the parent directory to sys.path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,6 +28,7 @@ from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
+
 # Create a simple custom tool to test the agent
 @tool
 def get_word_length(word: str) -> int:
@@ -152,23 +156,56 @@ def read_image_tool(image_path: str, prompt: str) -> str:
     """Read an image and return insight requested in the prompt."""
     client = OpenAI()
 
-    response = client.chat.completions.create(
-    model="gpt-4-vision-preview",
-    messages=[
-        {
-        "role": "user",
-        "content": [
-            {"type": "text", "text": prompt},
-            {
+    # Retrieve your Slack bot token from the environment variable
+    slack_token = os.environ.get("SLACK_BOT_TOKEN")
+
+    # Function to download image from Slack and convert to base64
+    def fetch_image_from_slack(url: str) -> str:
+        headers = {"Authorization": f"Bearer {slack_token}"}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return base64.b64encode(response.content).decode('utf-8')
+        else:
+            raise Exception(f"Failed to download image from Slack. Status code: {response.status_code}")
+
+    # Check if the image path is a Slack URL using regex for more precise matching
+    slack_url_pattern = r'https?://files\.slack\.com/.*'
+    is_slack_url = re.match(slack_url_pattern, image_path) is not None
+
+    if is_slack_url and slack_token:
+        # Fetching the image from Slack and converting to base64
+        image_base64 = fetch_image_from_slack(image_path)
+
+        # Correctly formatting the base64 data URL
+        image_data_url = f"data:image/jpeg;base64,{image_base64}"
+
+        content_block = {
             "type": "image_url",
             "image_url": {
-                "url": image_path,
-            },
-            },
-        ],
+                "url": image_data_url
+            }
         }
-    ],
-    max_tokens=900,
+    else:
+        content_block = {
+            "type": "image_url",
+            "image_url": {
+                "url": image_path
+            }
+        }
+
+    # Making the API request
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    content_block,
+                ],
+            }
+        ],
+        max_tokens=900,
     )
 
-    return(response.choices[0].message.content)
+    return response.choices[0].message.content
