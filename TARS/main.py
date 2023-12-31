@@ -1,7 +1,5 @@
 from AI_module.agent import process_user_task
 
-test = process_user_task("Hi TARS, how are you?", [])
-print(test)
 # Initialize chat_history
 chat_history = []
 
