@@ -23,6 +23,11 @@ def message_handler(event, say, ack, client):
     if 'channel_type' in event and event['channel_type'] == 'im' and 'bot_id' not in event:
         user_id = event['user']
         message_text = event['text']
+        channel_id = event['channel']
+
+        # Send an initial response
+        response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
+        ts = response['ts']  # Timestamp of the message
         
         # Fetch user info from Slack API
         user_info = client.users_info(user=user_id)
@@ -38,7 +43,7 @@ def message_handler(event, say, ack, client):
         agent_response_text = process_user_task(agent_input, chat_history)
 
         # Send the response back to the user in Slack
-        say(agent_response_text)
+        client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
 
 if __name__ == "__main__":
     handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
