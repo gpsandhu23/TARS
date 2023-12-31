@@ -1,9 +1,20 @@
-from email_module.oauth_setup import setup_oauth
+from AI_module.agent import process_user_task
 
-def main():
-    print("Main before setup_oauth()")
-    service = setup_oauth()
-    print("Main after setup_oauth()")
+test = process_user_task("Hi TARS, how are you?", [])
+print(test)
+# Initialize chat_history
+chat_history = []
 
-if __name__ == "__main__":
-    main()
+while True:
+    # Get user input
+    user_task = input("Enter your query (or type 'exit' to quit): ")
+    
+    # Check if the user wants to exit
+    if user_task.lower() == 'exit':
+        break
+
+    # Call the function from agent.py and pass chat_history
+    agent_response = process_user_task(user_task, chat_history)
+    
+    # Display the result
+    print("Agent Response:", agent_response)

@@ -9,7 +9,7 @@ from langchain.agents import AgentExecutor
 from langchain.agents import load_tools
 
 # import tools
-from tools import get_word_length, handle_all_unread_messages
+from .custom_tools import get_word_length, handle_all_unread_messages
 
 # Load environment variables from .env file
 load_dotenv()
@@ -52,16 +52,7 @@ agent = (
 )
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-chat_history = []
-
-while True:
-    # Get user input
-    user_task = input("Enter your query (or type 'exit' to quit): ")
-    
-    # Check if the user wants to exit
-    if user_task.lower() == 'exit':
-        break
-
+def process_user_task(user_task, chat_history):
     # Process the input using the agent
     result = agent_executor.invoke({"input": user_task, "chat_history": chat_history})
     
@@ -73,5 +64,5 @@ while True:
         ]
     )
     
-    # Display the result
-    print("Agent Response:", result["output"])
+    # Return the result
+    return result["output"]
