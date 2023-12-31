@@ -75,7 +75,7 @@ handle_message_schema = [
             }
         ]
 
-def ai_email_handler(classifier_input):
+def ai_gmail_handler(classifier_input):
     prompt = ChatPromptTemplate.from_messages(
         [
             ("human", "{input}")
@@ -104,7 +104,7 @@ def ai_email_handler(classifier_input):
     return json_object
 
 @tool
-def handle_all_unread_messages() -> list:
+def handle_all_unread_gmail() -> list:
     """Handle all unread messages in the inbox and return their details."""
     service = authenticate_gmail_api()
     unread_messages = fetch_unread_emails(service)
@@ -121,7 +121,7 @@ def handle_all_unread_messages() -> list:
         content = get_email_content(mime_msg)
 
         classifier_input = "Sender: " + str(sender) + " Subject: " + str(subject) + " Email content: " + str(content)
-        ai_response = ai_email_handler(classifier_input)
+        ai_response = ai_gmail_handler(classifier_input)
 
         # Extract details from ai_response
         email_details = {
