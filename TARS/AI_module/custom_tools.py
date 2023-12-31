@@ -20,6 +20,9 @@ from langchain.agents import tool
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 
+# OpenAI imports
+from openai import OpenAI
+
 # Load environment variables from .env file
 load_dotenv()
 # Create a simple custom tool to test the agent
@@ -143,3 +146,29 @@ def handle_all_unread_gmail() -> list:
         mark_email_as_read(service, 'me', msg_id)
 
     return all_message_details
+
+@tool
+def read_image_tool(image_path: str, prompt: str) -> str:
+    """Read an image and return insight requested in the prompt."""
+    client = OpenAI()
+
+    response = client.chat.completions.create(
+    model="gpt-4-vision-preview",
+    messages=[
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": prompt},
+            {
+            "type": "image_url",
+            "image_url": {
+                "url": image_path,
+            },
+            },
+        ],
+        }
+    ],
+    max_tokens=900,
+    )
+
+    return(response.choices[0].message.content)
