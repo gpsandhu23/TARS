@@ -4,3 +4,5 @@ google-api-python-client
 langchain
 openai
 python-dotenv
+slack_sdk
+slack_bolt
