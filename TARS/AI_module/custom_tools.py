@@ -4,6 +4,10 @@ import os
 import requests
 import base64
 import re
+import time
+
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 # Add the parent directory to sys.path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -209,3 +213,66 @@ def read_image_tool(image_path: str, prompt: str) -> str:
     )
 
     return response.choices[0].message.content
+
+@tool
+def fetch_dms_last_x_hours(hours: int) -> list:
+    """
+    Fetches direct messages (DMs) from the user's Slack account for the last 'x' hours.
+
+    Args:
+    hours (int): The number of hours in the past from which to retrieve DMs.
+
+    Returns:
+    list: A list of dictionaries, each containing details of a DM. 
+          Each dictionary has 'user' (sender's user ID), 'timestamp', and 'text' of the message.
+          Returns None if an error occurs.
+
+    Note:
+    The function uses an environment variable 'SLACK_USER_TOKEN' for authentication.
+
+    Example of returned data:
+    [
+        {
+            "user": "U12345678",
+            "timestamp": "1234567890.123456",
+            "text": "Hello, how are you?"
+        },
+        ...
+    ]
+    """
+
+    # Initialize a Web client with the user token
+    slack_user_token = os.environ.get("SLACK_USER_TOKEN")
+    client = WebClient(token=slack_user_token)
+
+    # Calculate the timestamp for 'hours' ago
+    hours_ago = time.time() - hours * 60 * 60
+
+    dms_last_x_hours = []
+
+    try:
+        # List all DM conversations
+        conversations = client.conversations_list(types='im')
+
+        for conversation in conversations['channels']:
+            conversation_id = conversation['id']
+
+            # Get conversation history
+            history = client.conversations_history(
+                channel=conversation_id, 
+                oldest=str(hours_ago)
+            )
+
+            for message in history['messages']:
+                # Add DMs from the last 'x' hours to the list
+                dms_last_x_hours.append({
+                    "user": message.get('user', 'Unknown'),
+                    "timestamp": message.get('ts', 'Unknown Timestamp'),
+                    "text": message.get('text', 'No Text')
+                })
+
+    except SlackApiError as e:
+        print(f"Error: {e.response['error']}")
+        return None
+
+    return dms_last_x_hours

@@ -7,3 +7,4 @@ python-dotenv
 slack_bolt
 pyowm
 yfinance
+youtube_search

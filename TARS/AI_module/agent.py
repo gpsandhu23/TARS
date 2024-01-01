@@ -8,9 +8,11 @@ from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor
 from langchain.agents import load_tools
 from langchain.tools.yahoo_finance_news import YahooFinanceNewsTool
+from langchain.agents.agent_toolkits import SlackToolkit
+from langchain.tools import YouTubeSearchTool
 
 # import tools
-from .custom_tools import get_word_length, handle_all_unread_gmail, read_image_tool
+from .custom_tools import get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,11 +20,14 @@ load_dotenv()
 # Define the LLM to use
 llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
 
-tools = [get_word_length, handle_all_unread_gmail, read_image_tool]
+tools = [get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours]
 requests_tools = load_tools(["requests_all"])
 weather_tools = load_tools(["openweathermap-api"])
 finance_tools = [YahooFinanceNewsTool()]
-tools = tools + requests_tools + weather_tools + finance_tools
+slack_toolkit = SlackToolkit()
+slack_tools = slack_toolkit.get_tools()
+youtube_tools = [YouTubeSearchTool()]
+tools = tools + requests_tools + weather_tools + finance_tools + slack_tools + youtube_tools
 
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
