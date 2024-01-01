@@ -19,7 +19,8 @@ llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
 
 tools = [get_word_length, handle_all_unread_gmail, read_image_tool]
 requests_tools = load_tools(["requests_all"])
-tools = tools + requests_tools
+weather_tools = load_tools(["openweathermap-api"])
+tools = tools + requests_tools + weather_tools
 
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
