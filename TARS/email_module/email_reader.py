@@ -1,6 +1,7 @@
 from googleapiclient.errors import HttpError
 import base64
 import email
+import datetime
 
 def fetch_unread_emails(service):
     """Fetch all unread emails from the user's inbox.
@@ -76,3 +77,29 @@ def get_email_content(mime_msg):
                 except UnicodeDecodeError:
                     content = byte_content.decode('utf-8', errors='replace')
     return content
+
+def get_upcoming_events(service, days=7):
+    """
+    Fetch the upcoming events from the primary Google Calendar for the next 'x' number of days.
+
+    Args:
+        service: Authorized Google Calendar API service instance.
+        days (int): The number of days from today for which to retrieve events.
+
+    Returns:
+        List of upcoming calendar events within the specified number of days.
+    """
+    now = datetime.datetime.utcnow()
+    time_min = now.isoformat() + 'Z'  # 'Z' indicates UTC time
+    time_max = (now + datetime.timedelta(days=days)).isoformat() + 'Z'
+
+    events_result = service.events().list(
+        calendarId='primary', 
+        timeMin=time_min, 
+        timeMax=time_max, 
+        singleEvents=True, 
+        orderBy='startTime'
+    ).execute()
+
+    events = events_result.get('items', [])
+    return events

@@ -25,8 +25,8 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
 
 # Import from email_module
-from email_module.load_creds import authenticate_gmail_api
-from email_module.email_reader import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content
+from email_module.load_creds import authenticate_gmail_api, authenticate_calendar_api
+from email_module.email_reader import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
 
 # Custom tool definition
 @tool
@@ -241,3 +241,19 @@ def fetch_dms_last_x_hours(hours: int) -> list:
     except SlackApiError as e:
         logging.error(f"Error fetching DMs: {e.response['error']}")
         return None
+
+@tool
+def fetch_calendar_events_for_x_days(days: int) -> list:
+    """
+    Fetch the upcoming events from the primary Google Calendar for the next 'x' number of days.
+
+    Args:
+        days (int): The number of days from today for which to retrieve events.
+
+    Returns:
+        List of upcoming calendar events within the specified number of days.
+    """
+    service = authenticate_calendar_api()
+    events = get_upcoming_events(service, days)
+
+    return events

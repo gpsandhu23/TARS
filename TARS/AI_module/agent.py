@@ -10,7 +10,7 @@ from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor, load_tools
 from langchain.tools import YahooFinanceNewsTool, YouTubeSearchTool
 from langchain.agents.agent_toolkits import SlackToolkit
-from .custom_tools import get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours
+from .custom_tools import get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +22,7 @@ load_dotenv()
 llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
 
 # Combine all tools
-custom_tools = [get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours]
+custom_tools = [get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days]
 request_tools = load_tools(["requests_all"])
 weather_tools = load_tools(["openweathermap-api"])
 finance_tools = [YahooFinanceNewsTool()]

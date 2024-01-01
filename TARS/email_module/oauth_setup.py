@@ -1,49 +1,43 @@
-# oauth_setup.py
-
 import os
-import pickle
+import json
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 
-def setup_oauth():
-    client_id = os.getenv("GMAIL_CLIENT_ID")
-    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
-    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',
-              'https://www.googleapis.com/auth/gmail.compose',
-              'https://www.googleapis.com/auth/gmail.modify']
+CLIENT_SECRET_FILE = '/Users/gurpartapsandhu/Downloads/client_secret_262946363607-sp223gi0lkj04iah35bh3quopj43qjrv.apps.googleusercontent.com.json'
+SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.compose',
+    'https://www.googleapis.com/auth/gmail.modify',
+    'https://www.googleapis.com/auth/calendar',
+]
 
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+creds = None
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_config(
-                client_config={
-                    "installed": {
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                        "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"],
-                    }
-                },
-                scopes=SCOPES,
-            )
-            auth_url, _ = flow.authorization_url(prompt='consent')
+# Check if the token.json file exists
+if os.path.exists('token.json'):
+    with open('token.json', 'r') as token:
+        creds_json = json.load(token)
+        creds = google.oauth2.credentials.Credentials.from_authorized_user_info(creds_json, SCOPES)
 
-            print('Please go to this URL and authorize the application:')
-            print(auth_url)
-            code = input('Enter the authorization code: ')
-            flow.fetch_token(code=code)
+# If there are no (valid) credentials available, let the user log in.
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
+        creds = flow.run_local_server(port=0)
 
-            creds = flow.credentials
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(creds, token)
+    # Save the credentials for the next run
+    with open('token.json', 'w') as token:
+        creds_to_save = {
+            'token': creds.token,
+            'refresh_token': creds.refresh_token,
+            'token_uri': creds.token_uri,
+            'client_id': creds.client_id,
+            'client_secret': creds.client_secret,
+            'scopes': creds.scopes
+        }
+        json.dump(creds_to_save, token)
 
-    service = build('gmail', 'v1', credentials=creds)
-    return service
+service = build('gmail', 'v1', credentials=creds)
