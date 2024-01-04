@@ -34,15 +34,6 @@ def prepare_agent_input(event, user_real_name):
                 agent_input['image_url'] = file_info['url_private']
     return agent_input
 
-@app.event("message")
-def message_handler(event, say, ack, client):
-    """Handles incoming messages."""
-    ack()
-    logging.info("Message received: %s", event)
-
-    # Process the message
-    process_message(event, client)
-
 def process_message(event, client):
     """Process the message and respond accordingly."""
     try:
@@ -60,6 +51,15 @@ def process_message(event, client):
             client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
     except Exception as e:
         logging.error("Error processing message: %s", str(e))
+
+@app.event("message")
+def message_handler(event, say, ack, client):
+    """Handles incoming messages."""
+    ack()
+    logging.info("Message received: %s", event)
+
+    # Process the message
+    process_message(event, client)
 
 if __name__ == "__main__":
     handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))

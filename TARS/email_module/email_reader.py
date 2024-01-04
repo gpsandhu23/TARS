@@ -15,7 +15,17 @@ def fetch_unread_emails(service):
     try:
         # List all unread messages
         response = service.users().messages().list(userId='me', labelIds=['UNREAD']).execute()
-        messages = response.get('messages', [])
+
+        # Debugging: Check the type of response and print it
+        print(f"Response type: {type(response)}")
+        print(f"Response content: {response}")
+
+        # Ensure response is a dictionary before calling get
+        if isinstance(response, dict):
+            messages = response.get('messages', [])
+        else:
+            print("Response is not a dictionary.")
+            return []
 
         all_messages = []
         for msg in messages:
