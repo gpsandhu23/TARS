@@ -10,8 +10,8 @@ COPY requirements.txt .
 # Install any dependencies in the requirements file
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the TARS directory into the container at /app/TARS
-COPY TARS/ TARS/
+# Copy the dir
+COPY . .
 
 # Change the working directory
 WORKDIR /app/TARS
