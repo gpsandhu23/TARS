@@ -26,7 +26,7 @@ sys.path.insert(0, parent_dir)
 
 # Import from email_module
 from email_module.load_creds import authenticate_gmail_api, authenticate_calendar_api
-from email_module.email_reader import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
+from TARS.email_module.gmail_reader import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
 
 # Custom tool definition
 @tool
