@@ -4,13 +4,13 @@ import email
 import datetime
 
 def fetch_unread_emails(service):
-    """Fetch all unread emails from the user's inbox.
+    """Fetch all unread emails from the user's inbox with their ID and received date.
 
     Args:
         service: Authorized Gmail API service instance.
 
     Returns:
-        List of unread email messages.
+        List of dictionaries containing the email ID, and received date of unread email messages.
     """
     try:
         # List all unread messages
@@ -21,22 +21,31 @@ def fetch_unread_emails(service):
         print(f"Response content: {response}")
 
         # Ensure response is a dictionary before calling get
-        if isinstance(response, dict):
-            messages = response.get('messages', [])
-        else:
+        if not isinstance(response, dict):
             print("Response is not a dictionary.")
             return []
 
+        messages = response.get('messages', [])
         all_messages = []
         for msg in messages:
-            # Fetch the full message details for each unread message
-            msg_detail = service.users().messages().get(userId='me', id=msg['id']).execute()
-            all_messages.append(msg_detail)
+            # Fetch only the headers of the message
+            msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='metadata', 
+                                                        metadataHeaders=['Date']).execute()
+            
+            # Extract the headers
+            headers = msg_detail.get('payload', {}).get('headers', [])
+            date_header = next((header['value'] for header in headers if header['name'] == 'Date'), None)
+            
+            # Append a dictionary with the email ID and received date to the list
+            all_messages.append({
+                'id': msg['id'],
+                'received_date': date_header
+            })
 
         return all_messages
 
-    except HttpError as error:
-        print(f'An error occurred: {error}')
+    except Exception as e:
+        print(f'An error occurred: {e}')
         return []
     
 def mark_email_as_read(service, user_id, msg_id):

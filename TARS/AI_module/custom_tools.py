@@ -125,6 +125,7 @@ def handle_all_unread_gmail() -> list:
 
         for message in unread_messages:
             msg_id = message['id']
+            received_date = message['received_date']
             mime_msg = get_mime_message(service, 'me', msg_id)
 
             headers = mime_msg.items()
@@ -138,6 +139,8 @@ def handle_all_unread_gmail() -> list:
             email_details = {
                 'sender': sender,
                 'subject': subject,
+                'received_date': received_date,
+                'id': msg_id,
                 'summary': ai_response.get('summary', 'N/A'),
                 'action_needed': ai_response.get('action_needed', 'N/A'),
                 'importance': ai_response.get('importance', 'N/A'),
@@ -154,6 +157,46 @@ def handle_all_unread_gmail() -> list:
     except Exception as e:
         logging.error(f"Error in handle_all_unread_gmail: {e}")
         return []
+
+@tool
+def fetch_email_by_id(email_id: str) -> dict[str, str]:
+    """Fetch a specific email. Use this tool to fetch a specific email
+
+    Args:
+        email_id: The ID of the email to fetch.
+
+    Returns:
+        A dictionary containing details of the email, or None if an error occurs.
+    """
+    try:
+        service = authenticate_gmail_api()
+        # Fetch the full message details using the email ID
+        raw_message = service.users().messages().get(userId='me', id=email_id, format='raw').execute()
+        
+        # Convert raw_message to a MIME message
+        mime_msg = get_mime_message(service, 'me', email_id)
+
+        # Extract headers for sender and subject
+        headers = mime_msg.items()
+        sender = next((value for name, value in headers if name == 'From'), 'No Sender')
+        subject = next((value for name, value in headers if name == 'Subject'), 'No Subject')
+        
+        # Get email content
+        content = get_email_content(mime_msg)
+
+        # Compile email details
+        email_details = {
+            'id': email_id,
+            'sender': sender,
+            'subject': subject,
+            'content': content
+        }
+
+        return email_details
+
+    except Exception as e:
+        print(f'An error occurred: {e}')
+        return None
 
 # Image reading tool
 @tool
