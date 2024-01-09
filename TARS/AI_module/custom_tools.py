@@ -90,7 +90,7 @@ def ai_gmail_handler(classifier_input):
         classifier_input (str): The input string containing details about the email to be classified.
 
     Returns:
-        dict: A dictionary containing the processed information of the email, or the raw content if JSON parsing fails.
+        dict: A dictionary containing the processed information of the email.
     """
     try:
         prompt = ChatPromptTemplate.from_messages([("human", "{input}")])
@@ -103,10 +103,25 @@ def ai_gmail_handler(classifier_input):
         if function_call is not None:
             content = function_call.get('arguments', content)
 
-        return json.loads(content)
-    except json.JSONDecodeError:
-        logging.error("Failed to parse JSON. Here's the raw content:")
-        return content
+        # Check if content is a string and can be parsed as JSON
+        if isinstance(content, str):
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # If content is a string but not JSON, wrap it in a JSON-like structure
+                return {
+                    "error": "Content is a string but not JSON",
+                    "raw_content": content
+                }
+        else:
+            # If not a string, log and return a default dictionary
+            logging.error("Content is not in the expected format. Returning default dictionary.")
+            return {"error": "Content not in expected format", "raw_content": str(content)}
+
+    except Exception as e:
+        logging.error(f"Error in ai_gmail_handler: {e}")
+        return {"error": "Exception occurred in ai_gmail_handler", "exception_message": str(e)}
+
 
 # Tool to handle all unread Gmails
 @tool
@@ -135,6 +150,7 @@ def handle_all_unread_gmail() -> list:
 
             classifier_input = "Sender: " + str(sender) + " Subject: " + str(subject) + " Email content: " + str(content)
             ai_response = ai_gmail_handler(classifier_input)
+            print(type(ai_response))
 
             email_details = {
                 'sender': sender,
@@ -159,44 +175,61 @@ def handle_all_unread_gmail() -> list:
         return []
 
 @tool
-def fetch_email_by_id(email_id: str) -> dict[str, str]:
-    """Fetch a specific email. Use this tool to fetch a specific email
+def fetch_emails_by_sender_name(sender_name: str) -> list[dict[str, str]]:
+    """
+    Fetch emails by a specific sender's name.
 
     Args:
-        email_id: The ID of the email to fetch.
+        sender_name (str): The name of the sender.
 
     Returns:
-        A dictionary containing details of the email, or None if an error occurs.
+        A list of dictionaries, each containing details of emails from senders matching the specified name, or None if an error occurs.
     """
     try:
+        # Authenticate and create a Gmail API service instance
         service = authenticate_gmail_api()
-        # Fetch the full message details using the email ID
-        raw_message = service.users().messages().get(userId='me', id=email_id, format='raw').execute()
-        
-        # Convert raw_message to a MIME message
-        mime_msg = get_mime_message(service, 'me', email_id)
 
-        # Extract headers for sender and subject
-        headers = mime_msg.items()
-        sender = next((value for name, value in headers if name == 'From'), 'No Sender')
-        subject = next((value for name, value in headers if name == 'Subject'), 'No Subject')
-        
-        # Get email content
-        content = get_email_content(mime_msg)
+        # Search for messages from the specified sender name
+        query = f'from:{sender_name}'
+        response = service.users().messages().list(userId='me', q=query).execute()
 
-        # Compile email details
-        email_details = {
-            'id': email_id,
-            'sender': sender,
-            'subject': subject,
-            'content': content
-        }
+        emails = []
+        if 'messages' in response:
+            for message in response['messages']:
+                email_id = message['id']
 
-        return email_details
+                # Fetch the full message details using the email ID
+                raw_message = service.users().messages().get(userId='me', id=email_id, format='raw').execute()
+                
+                # Convert raw_message to a MIME message
+                mime_msg = get_mime_message(service, 'me', email_id)
+
+                # Extract headers for sender and subject
+                headers = mime_msg.items()
+                sender = next((value for name, value in headers if name == 'From'), 'No Sender')
+                subject = next((value for name, value in headers if name == 'Subject'), 'No Subject')
+                
+                # Get email content
+                content = get_email_content(mime_msg)
+
+                # Compile email details
+                email_details = {
+                    'id': email_id,
+                    'sender': sender,
+                    'subject': subject,
+                    'content': content
+                }
+
+                emails.append(email_details)
+
+        return emails
 
     except Exception as e:
         print(f'An error occurred: {e}')
         return None
+
+# Example usage
+emails_from_sender_name = fetch_emails_by_sender_name('John Doe')
 
 # Image reading tool
 @tool
