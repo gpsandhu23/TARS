@@ -8,14 +8,12 @@ import google.oauth2.credentials
 # Construct the path to the .env file (two levels up)
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 
-# Check if the .env file exists
+# Load the .env file if it exists
 if not os.path.exists(dotenv_path):
     print(f"Error: .env file not found at {dotenv_path}")
 else:
     load_dotenv(dotenv_path)
     print(f".env file loaded from {dotenv_path}")
-    
-load_dotenv(dotenv_path)
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
@@ -25,7 +23,6 @@ SCOPES = [
 ]
 
 creds = None
-
 print("Environment Variables Loaded:", os.getenv('CLIENT_ID'), os.getenv('CLIENT_SECRET'))
 
 # Check for credentials in environment variables
@@ -55,20 +52,18 @@ if 'CLIENT_ID' in os.environ and 'CLIENT_SECRET' in os.environ:
 
         print("Credentials Loaded from Environment Variables.")
 
-    # Refresh the token if it's expired
-    if creds and creds.expired and creds.refresh_token:
-        print("Refreshing Expired Token.")
-        creds.refresh(Request())
-
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        print("Initiating OAuth Flow.")
+    try:
+        # Refresh the token if it's expired
+        if creds and creds.expired and creds.refresh_token:
+            print("Refreshing Expired Token.")
+            creds.refresh(Request())
+    except google.auth.exceptions.RefreshError:
+        print("Token invalid. Re-authenticating...")
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
         creds = flow.run_local_server(port=0)
-
-        # Save the new credentials to the .env file
         set_key(dotenv_path, "TOKEN", creds.token)
         set_key(dotenv_path, "REFRESH_TOKEN", creds.refresh_token)
+        print("New credentials obtained and saved.")
 
 # Build the Gmail service
 try:
