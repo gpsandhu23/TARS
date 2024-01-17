@@ -48,9 +48,23 @@ def process_message(event, client):
             agent_input = prepare_agent_input(event, user_real_name)
             agent_response_text = process_user_task(str(agent_input), chat_history)
 
-            client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
+            # Split and send the message if it's too long
+            max_length = 4000  # Slack's max character limit for a message
+            if len(agent_response_text) > max_length:
+                first_part = agent_response_text[:max_length]
+                remaining_parts = agent_response_text[max_length:]
+
+                # Update the original message with the first part
+                client.chat_update(channel=channel_id, ts=ts, text=first_part)
+
+                # Send the remaining parts as a new message
+                client.chat_postMessage(channel=channel_id, text=remaining_parts)
+            else:
+                # If the message is not too long, just update it normally
+                client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
     except Exception as e:
         logging.error("Error processing message: %s", str(e))
+
 
 @app.event("message")
 def message_handler(event, say, ack, client):
