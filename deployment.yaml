@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tars-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tars
+  template:
+    metadata:
+      labels:
+        app: tars
+    spec:
+      containers:
+      - name: tars
+        image: tars:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: OPENAI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets
+                key: OPENAI_API_KEY
+          - name: SLACK_APP_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets
+                key: SLACK_APP_TOKEN
+          - name: SLACK_BOT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets
+                key: SLACK_BOT_TOKEN
+          - name: SLACK_SIGNING_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets
+                key: SLACK_SIGNING_SECRET
+          - name: OPENWEATHERMAP_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets
+                key: OPENWEATHERMAP_API_KEY
