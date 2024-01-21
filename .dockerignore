@@ -8,5 +8,5 @@ __pycache__/
 *.pyd
 *.tmp
 *.temp
-.env
+.env*
 myenv/

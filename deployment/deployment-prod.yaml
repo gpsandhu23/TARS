@@ -1,44 +1,45 @@
+# deployment-prod.yml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tars-deployment
+  name: tars-deployment-prod  # Changed to prod
 spec:
-  replicas: 1
+  replicas: 1  # Set the number of replicas for production
   selector:
     matchLabels:
-      app: tars
+      app: tars-prod  # Changed to prod
   template:
     metadata:
       labels:
-        app: tars
+        app: tars-prod  # Changed to prod
     spec:
       containers:
       - name: tars
-        image: tars:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER  # Will be replaced in the workflow
+        imagePullPolicy: Always
         env:
           - name: OPENAI_API_KEY
             valueFrom:
               secretKeyRef:
-                name: tars-secrets
+                name: tars-secrets-prod  # Reference to production secrets
                 key: OPENAI_API_KEY
           - name: SLACK_APP_TOKEN
             valueFrom:
               secretKeyRef:
-                name: tars-secrets
+                name: tars-secrets-prod  # Reference to production secrets
                 key: SLACK_APP_TOKEN
           - name: SLACK_BOT_TOKEN
             valueFrom:
               secretKeyRef:
-                name: tars-secrets
+                name: tars-secrets-prod  # Reference to production secrets
                 key: SLACK_BOT_TOKEN
           - name: SLACK_SIGNING_SECRET
             valueFrom:
               secretKeyRef:
-                name: tars-secrets
+                name: tars-secrets-prod  # Reference to production secrets
                 key: SLACK_SIGNING_SECRET
           - name: OPENWEATHERMAP_API_KEY
             valueFrom:
               secretKeyRef:
-                name: tars-secrets
+                name: tars-secrets-prod  # Reference to production secrets
                 key: OPENWEATHERMAP_API_KEY
