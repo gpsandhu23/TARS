@@ -1,0 +1,45 @@
+# deployment-stage.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tars-deployment-stage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tars-stage
+  template:
+    metadata:
+      labels:
+        app: tars-stage
+    spec:
+      containers:
+      - name: tars
+        image: ghcr.io/your-username/your-app:IMAGE_TAG_PLACEHOLDER
+        imagePullPolicy: Always
+        env:
+          - name: OPENAI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets-stage  # Update if you have separate secrets for staging
+                key: OPENAI_API_KEY
+          - name: SLACK_APP_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets-stage  # Update if you have separate secrets for staging
+                key: SLACK_APP_TOKEN
+          - name: SLACK_BOT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets-stage  # Update if you have separate secrets for staging
+                key: SLACK_BOT_TOKEN
+          - name: SLACK_SIGNING_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets-stage  # Update if you have separate secrets for staging
+                key: SLACK_SIGNING_SECRET
+          - name: OPENWEATHERMAP_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: tars-secrets-stage  # Update if you have separate secrets for staging
+                key: OPENWEATHERMAP_API_KEY
