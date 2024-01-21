@@ -40,9 +40,9 @@ jobs:
 
     - name: Update Image Tag in Deployment File
       run: |
-        sed -i 's|ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gpsandhu23/tars:${{ github.sha }}|' deployment-stage.yml
+        sed -i 's|ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gpsandhu23/tars:${{ github.sha }}|' ./deployment/deployment-stage.yml
 
     - name: Deploy to EKS
       run: |
-        kubectl apply -f deployment-stage.yml
+        kubectl apply -f ./deployment/deployment-stage.yml
         kubectl rollout status deployment/tars-deployment-stage
