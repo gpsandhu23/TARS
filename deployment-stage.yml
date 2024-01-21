@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: tars
-        image: ghcr.io/gsandhu/tars:IMAGE_TAG_PLACEHOLDER  # Updated to lowercase
+        image: ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER  # Updated to lowercase
         imagePullPolicy: Always
         env:
           - name: OPENAI_API_KEY
