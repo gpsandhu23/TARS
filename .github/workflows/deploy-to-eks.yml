@@ -24,13 +24,13 @@ jobs:
 
     - name: Build and Push Docker image
       run: |
-        docker build -t ghcr.io/gsandhu/tars:${{ github.sha }} .
-        docker push ghcr.io/gsandhu/tars:${{ github.sha }}
+        docker build -t ghcr.io/gpsandhu23/tars:${{ github.sha }} .
+        docker push ghcr.io/gpsandhu23/tars:${{ github.sha }}
     
     # New step to replace the image tag placeholder
     - name: Update Image Tag in Deployment File
       run: |
-        sed -i 's|ghcr.io/gsandhu/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gsandhu/tars:${{ github.sha }}|' deployment-stage.yml
+        sed -i 's|ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gpsandhu23/tars:${{ github.sha }}|' deployment-stage.yml
 
     # Deploy to EKS
     - name: Deploy to EKS
