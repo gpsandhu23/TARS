@@ -4,6 +4,15 @@ import os
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+import sys
+from pathlib import Path
+
+# Add the parent directory to sys.path
+parent_dir = str(Path(__file__).resolve().parent.parent)
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from evals.agent_evaluator import evaluate_prediction
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +56,13 @@ def process_message(event, client):
             user_info, user_real_name = fetch_user_info(client, user_id)
             agent_input = prepare_agent_input(event, user_real_name)
             agent_response_text = process_user_task(str(agent_input), chat_history)
+
+            # Evaluate the response against the question
+            eval_result = evaluate_prediction(agent_input, agent_response_text)
+            # Log the evaluation result
+            logging.info(f"Evaluation Result: {eval_result}")
+
+
 
             # Split and send the message if it's too long
             max_length = 4000  # Slack's max character limit for a message
