@@ -68,6 +68,7 @@ jobs:
       - name: Run Evaluation Script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
         run: |
           cd TARS
           python -m evals.CI_evaluator
