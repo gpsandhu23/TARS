@@ -4,14 +4,6 @@ import os
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-import sys
-from pathlib import Path
-
-# Add the parent directory to sys.path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
-
 from evals.agent_evaluator import evaluate_prediction
 
 # Set up basic logging
