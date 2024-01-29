@@ -67,4 +67,5 @@ jobs:
 
       - name: Run Evaluation Script
         run: |
-          python -m TARS.evals.CI_evaluator
+          cd TARS
+          python -m evals.CI_evaluator
