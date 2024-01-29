@@ -10,6 +10,7 @@ from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor, load_tools
 from langchain.tools import YahooFinanceNewsTool, YouTubeSearchTool
 from langchain.agents.agent_toolkits import SlackToolkit
+
 from .custom_tools import get_word_length, handle_all_unread_gmail, fetch_emails_by_sender_name, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days
 
 # Setup logging
@@ -53,16 +54,24 @@ agent = (
 )
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-def process_user_task(user_task, chat_history):
+def process_user_task(user_task, chat_history=None):
     """
-    Process the user task using the agent and update the chat history.
+    Process the user task using the agent. Update the chat history if provided.
     
     :param user_task: The task input by the user.
-    :param chat_history: The current chat history.
+    :param chat_history: The current chat history. If None, an empty list is used.
     :return: The output from the agent.
     """
     try:
-        result = agent_executor.invoke({"input": user_task, "chat_history": chat_history})
+        # Initialize chat_history as an empty list if None is provided
+        if chat_history is None:
+            chat_history = []
+
+        invoke_params = {"input": user_task, "chat_history": chat_history}
+
+        result = agent_executor.invoke(invoke_params)
+
+        # Update chat history
         chat_history.extend([
             HumanMessage(content=user_task),
             AIMessage(content=result["output"]),
@@ -71,3 +80,6 @@ def process_user_task(user_task, chat_history):
     except Exception as e:
         logging.error(f"Error in process_user_task: {e}")
         return "An error occurred while processing the task."
+    
+# output = process_user_task("Where are my socks?")
+# print(output)
