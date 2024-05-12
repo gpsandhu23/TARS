@@ -11,4 +11,4 @@ youtube_search
 pydantic-settings
 pytest
 fastapi
-
+streamlit
