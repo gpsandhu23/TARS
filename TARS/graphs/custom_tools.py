@@ -25,8 +25,8 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
 
 # Import from email_module
-from email_module.load_creds import authenticate_gmail_api, authenticate_calendar_api
-from email_module.gmail_reader import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
+# from retrievers.gmail import authenticate_gmail_api, authenticate_calendar_api
+# from retrievers.gmail import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
 
 # Custom tool definition
 @tool
