@@ -10,3 +10,5 @@ yfinance
 youtube_search
 pydantic-settings
 pytest
+fastapi
+
