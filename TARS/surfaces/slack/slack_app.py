@@ -36,7 +36,7 @@ class SlackBot:
             return None, "Unknown"
 
     def prepare_agent_input(self, event, user_real_name):
-        agent_input = {'user name': user_real_name, 'message': event.get('text', '')}
+        agent_input = {'user_name': user_real_name, 'message': event.get('text', '')}
         agent_input.update(self.extract_images(event))
         return agent_input
 
@@ -48,7 +48,7 @@ class SlackBot:
                     images['image_url'] = file_info['url_private']
         return images
 
-    @traceable(name="slack_message")
+    @traceable(name="Slack Message")
     def process_message(self, event, client):
         user_id, channel_id = event.get('user'), event.get('channel')
         if self.is_direct_message(event):
