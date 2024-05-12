@@ -1,9 +1,10 @@
-from graphs.agent import process_user_task
+# from graphs.agent import process_user_task
 from config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from langsmith import traceable
+from graphs.vanilla_llm import process_user_task
 
 class SlackBot:
     def __init__(self):
