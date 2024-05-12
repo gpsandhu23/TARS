@@ -1,6 +1,5 @@
 from graphs.agent import process_user_task
-from dotenv import load_dotenv
-import os
+from config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -8,84 +7,76 @@ from langsmith import traceable
 
 class SlackBot:
     def __init__(self):
-        # Set up basic logging
-        logging.basicConfig(level=logging.INFO)
-
-        # Load environment variables
-        load_dotenv()
-
-        # Initialize the chat_history
+        self.setup_logging()
         self.chat_history = []
+        self.initialize_slack_app()
 
-        # Slack App Initialization
-        self.app = App(
-            token=os.environ.get("SLACK_BOT_TOKEN"),
-            signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
-        )
+    def setup_logging(self):
+        logging.basicConfig(level=logging.INFO)
+        logging.info("Logger initialized.")
 
-        # Register event handlers
-        self.app.event("message")(self.message_handler)
+    def initialize_slack_app(self):
+        try:
+            self.app = App(
+                token=slack_settings.slack_bot_token,
+                signing_secret=slack_settings.slack_signing_secret
+            )
+            self.app.event("message")(self.process_message)
+            logging.info("Slack app initialized successfully.")
+        except Exception as e:
+            logging.error(f"Failed to initialize Slack App: {e}")
+            raise
 
     def fetch_user_info(self, client, user_id):
-        """Fetches user information from Slack."""
-        user_info = client.users_info(user=user_id)
-        return user_info, user_info['user']['real_name'] if user_info and user_info['ok'] else "Unknown"
+        try:
+            user_info = client.users_info(user=user_id)
+            return user_info, user_info['user']['real_name'] if user_info and user_info['ok'] else "Unknown"
+        except Exception as e:
+            logging.error(f"Failed to fetch user info: {e}")
+            return None, "Unknown"
 
     def prepare_agent_input(self, event, user_real_name):
-        """Prepares the agent input including any images."""
         agent_input = {'user name': user_real_name, 'message': event.get('text', '')}
+        agent_input.update(self.extract_images(event))
+        return agent_input
+
+    def extract_images(self, event):
+        images = {}
         if 'files' in event:
             for file_info in event['files']:
                 if file_info['mimetype'].startswith('image/'):
-                    agent_input['image_url'] = file_info['url_private']
-        return agent_input
+                    images['image_url'] = file_info['url_private']
+        return images
 
     @traceable(name="slack_message")
     def process_message(self, event, client):
-        """Process the message and respond accordingly."""
-        try:
-            user_id, channel_id = event.get('user'), event.get('channel')
+        user_id, channel_id = event.get('user'), event.get('channel')
+        if self.is_direct_message(event):
+            response = self.handle_direct_message(event, client, user_id, channel_id)
+            return response
 
-            # Respond only to DMs and non-bot messages
-            if 'channel_type' in event and event['channel_type'] == 'im' and 'bot_id' not in event:
-                response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
-                ts = response['ts']
+    def is_direct_message(self, event):
+        return 'channel_type' in event and event['channel_type'] == 'im' and 'bot_id' not in event
 
-                user_info, user_real_name = self.fetch_user_info(client, user_id)
-                agent_input = self.prepare_agent_input(event, user_real_name)
-                agent_response_text = process_user_task(str(agent_input), self.chat_history)
+    def handle_direct_message(self, event, client, user_id, channel_id):
+        response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
+        ts = response['ts']
+        user_info, user_real_name = self.fetch_user_info(client, user_id)
+        agent_input = self.prepare_agent_input(event, user_real_name)
+        agent_response_text = process_user_task(str(agent_input), self.chat_history)
+        self.send_response(client, channel_id, ts, agent_response_text)
+        return agent_response_text
 
-                # Split and send the message if it's too long
-                max_length = 4000  # Slack's max character limit for a message
-                if len(agent_response_text) > max_length:
-                    first_part = agent_response_text[:max_length]
-                    remaining_parts = agent_response_text[max_length:]
-
-                    # Update the original message with the first part
-                    client.chat_update(channel=channel_id, ts=ts, text=first_part)
-
-                    # Send the remaining parts as a new message
-                    client.chat_postMessage(channel=channel_id, text=remaining_parts)
-                    return agent_response_text
-                else:
-                    # If the message is not too long, just update it normally
-                    client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
-                    return agent_response_text
-        except Exception as e:
-            logging.error("Error processing message: %s", str(e))
-            return "Error processing message: %s" % str(e)
-
-    def message_handler(self, event, say, ack, client):
-        """Handles incoming messages."""
-        ack()
-        logging.info("Message received: %s", event)
-
-        # Process the message
-        self.process_message(event, client)
+    def send_response(self, client, channel_id, ts, text):
+        if len(text) > 4000:
+            first_part, remaining_parts = text[:4000], text[4000:]
+            client.chat_update(channel=channel_id, ts=ts, text=first_part)
+            client.chat_postMessage(channel=channel_id, text=remaining_parts)
+        else:
+            client.chat_update(channel=channel_id, ts=ts, text=text)
 
     def start(self):
-        """Starts the Slack bot."""
-        handler = SocketModeHandler(self.app, os.environ.get("SLACK_APP_TOKEN"))
+        handler = SocketModeHandler(self.app, slack_settings.slack_app_token)
         handler.start()
 
 if __name__ == "__main__":
