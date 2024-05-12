@@ -1,15 +1,17 @@
 import os
 import logging
 from dotenv import load_dotenv
-from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.tools.render import format_tool_to_openai_function
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
-from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
+from langchain.agents.output_parsers import ToolsAgentOutputParser
 from langchain.agents import AgentExecutor, load_tools
 from langchain.tools import YahooFinanceNewsTool, YouTubeSearchTool
 from langchain.agents.agent_toolkits import SlackToolkit
+
+from models.generic_llms.openai import openai_llm
+from models.generic_llms.anthropic import anthropic_llm
 
 from .custom_tools import get_word_length, handle_all_unread_gmail, fetch_emails_by_sender_name, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days
 
@@ -20,7 +22,8 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 # Define the LLM to use
-llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
+llm = openai_llm
+# llm = anthropic_llm
 
 # Combine all tools
 custom_tools = [get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days, fetch_emails_by_sender_name]
@@ -31,7 +34,13 @@ slack_tools = SlackToolkit().get_tools()
 youtube_tools = [YouTubeSearchTool()]
 
 tools = custom_tools + request_tools + weather_tools + finance_tools + slack_tools + youtube_tools
-llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
+
+# Check what llm is being used and bind appropriate tools
+if llm == openai_llm:
+    llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
+elif llm == anthropic_llm:
+    llm_with_tools = llm.bind_tools(tools)
+
 
 # Define the chat prompt
 prompt = ChatPromptTemplate.from_messages([
@@ -50,7 +59,7 @@ agent = (
     }
     | prompt
     | llm_with_tools
-    | OpenAIFunctionsAgentOutputParser()
+    | ToolsAgentOutputParser(tools=tools)
 )
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
