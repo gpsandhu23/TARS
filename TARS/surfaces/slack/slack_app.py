@@ -4,6 +4,7 @@ import os
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+from langsmith import traceable
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +35,7 @@ def prepare_agent_input(event, user_real_name):
                 agent_input['image_url'] = file_info['url_private']
     return agent_input
 
+@traceable(name="slack_message")
 def process_message(event, client):
     """Process the message and respond accordingly."""
     try:
@@ -59,11 +61,14 @@ def process_message(event, client):
 
                 # Send the remaining parts as a new message
                 client.chat_postMessage(channel=channel_id, text=remaining_parts)
+                return  agent_response_text
             else:
                 # If the message is not too long, just update it normally
                 client.chat_update(channel=channel_id, ts=ts, text=agent_response_text)
+                return agent_response_text
     except Exception as e:
         logging.error("Error processing message: %s", str(e))
+        return "Error processing message: %s" % str(e)
 
 
 @app.event("message")
