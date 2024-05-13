@@ -1,15 +1,15 @@
-from graphs.agent import process_user_task
+from graphs.agent import AgentManager
 from config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from langsmith import traceable
-# from graphs.vanilla_llm import process_user_task
 
 class SlackBot:
     def __init__(self):
         self.setup_logging()
         self.chat_history = []
+        self.agent_manager = AgentManager()  # Create an instance of AgentManager from agent.py
         self.initialize_slack_app()
 
     def setup_logging(self):
@@ -64,7 +64,7 @@ class SlackBot:
         ts = response['ts']
         user_info, user_real_name = self.fetch_user_info(client, user_id)
         agent_input = self.prepare_agent_input(event, user_real_name)
-        agent_response_text = process_user_task(str(agent_input), self.chat_history)
+        agent_response_text = self.agent_manager.process_user_task(str(agent_input), self.chat_history)  # Correctly invoke process_user_task
         self.send_response(client, channel_id, ts, agent_response_text)
         return agent_response_text
 
