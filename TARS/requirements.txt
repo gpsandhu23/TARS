@@ -13,3 +13,4 @@ pytest
 fastapi
 streamlit
 langchain-anthropic
+langchain-openai
