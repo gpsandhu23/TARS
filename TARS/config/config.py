@@ -16,7 +16,7 @@ class SlackSettings(BaseSettings):
         env_file_encoding = 'utf-8'
 
 class OpenAISettings(BaseSettings):
-    model: str = "gpt-4-turbo"
+    model: str = "gpt-4o"
     api_key: str
     temperature: float = 0.0
 

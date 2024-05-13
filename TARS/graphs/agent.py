@@ -15,7 +15,7 @@ class AgentManager:
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
         load_dotenv()
-        self.llm = anthropic_llm
+        self.llm = openai_llm
         self.tools = self.load_all_tools()
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.prompt = self.define_prompt()
