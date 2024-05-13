@@ -6,7 +6,7 @@ from langchain.tools.render import format_tool_to_openai_function
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
 from langchain.agents.output_parsers import ToolsAgentOutputParser
-from langchain.agents import AgentExecutor, load_tools
+from langchain.agents import AgentExecutor, load_tools, create_tool_calling_agent
 from langchain.tools import YahooFinanceNewsTool, YouTubeSearchTool
 from langchain.agents.agent_toolkits import SlackToolkit
 
@@ -35,11 +35,8 @@ youtube_tools = [YouTubeSearchTool()]
 
 tools = custom_tools + request_tools + weather_tools + finance_tools + slack_tools + youtube_tools
 
-# Check what llm is being used and bind appropriate tools
-if llm == openai_llm:
-    llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
-elif llm == anthropic_llm:
-    llm_with_tools = llm.bind_tools(tools)
+# Bind tools is a new method in langchain that provides a sandard infertace across different LLMs for tool usage
+llm_with_tools = llm.bind_tools(tools)
 
 
 # Define the chat prompt
@@ -50,17 +47,20 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-# Define the agent
-agent = (
-    {
-        "input": lambda x: x["input"],
-        "agent_scratchpad": lambda x: format_to_openai_function_messages(x["intermediate_steps"]),
-        "chat_history": lambda x: x["chat_history"],
-    }
-    | prompt
-    | llm_with_tools
-    | ToolsAgentOutputParser(tools=tools)
-)
+agent = create_tool_calling_agent(llm, tools, prompt)
+
+# # Define the agent
+# agent = (
+#     {
+#         "input": lambda x: x["input"],
+#         "agent_scratchpad": lambda x: format_to_openai_function_messages(x["intermediate_steps"]),
+#         "chat_history": lambda x: x["chat_history"],
+#     }
+#     | prompt
+#     | llm_with_tools
+#     | ToolsAgentOutputParser(tools=tools)
+# )
+
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 def process_user_task(user_task, chat_history=None):
@@ -89,6 +89,3 @@ def process_user_task(user_task, chat_history=None):
     except Exception as e:
         logging.error(f"Error in process_user_task: {e}")
         return "An error occurred while processing the task."
-    
-# output = process_user_task("Where are my socks?")
-# print(output)
