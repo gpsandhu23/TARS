@@ -1,4 +1,5 @@
 import logging
+import os
 from dotenv import load_dotenv
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
@@ -6,8 +7,10 @@ from langchain.agents import AgentExecutor, load_tools, create_tool_calling_agen
 from langchain.tools import YahooFinanceNewsTool, YouTubeSearchTool
 from langchain.agents.agent_toolkits import SlackToolkit
 
+from config.config import llm_settings
 from models.generic_llms.openai import openai_llm
 from models.generic_llms.anthropic import anthropic_llm
+from models.generic_llms.google_ai import google_llm
 
 from .custom_tools import get_word_length, handle_all_unread_gmail, fetch_emails_by_sender_name, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days
 
@@ -15,7 +18,15 @@ class AgentManager:
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
         load_dotenv()
-        self.llm = openai_llm
+        llm_type = llm_settings.llm_type
+        if llm_type == 'openai':
+            self.llm = openai_llm
+        elif llm_type == 'google':
+            self.llm = google_llm
+        elif llm_type == 'anthropic':
+            self.llm = anthropic_llm
+        else:
+            raise ValueError(f"Unsupported LLM type: {llm_type}")
         self.tools = self.load_all_tools()
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.prompt = self.define_prompt()
