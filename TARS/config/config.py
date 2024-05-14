@@ -1,21 +1,30 @@
 from pydantic_settings import BaseSettings
-from langchain.chat_models import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
+from typing import ClassVar
 import os
 from dotenv import load_dotenv
 
+# Load secrets from .env
 load_dotenv()
 
-class SlackSettings(BaseSettings):
+# Determine the environment and load the appropriate config file
+environment = os.getenv('ENVIRONMENT', 'local')  # Default to 'local' if not set
+config_file = f"config.{environment}"
+load_dotenv(config_file)
+
+class BaseConfig(BaseSettings):
+    class Config:
+        env_file = config_file
+        env_file_encoding = 'utf-8'
+
+
+class SlackSettings(BaseConfig):
     slack_bot_token: str
     slack_signing_secret: str
     slack_app_token: str
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = 'utf-8'
 
-class OpenAISettings(BaseSettings):
+class OpenAISettings(BaseConfig):
+    env_prefix: ClassVar[str] = "OPENAI_"
     model: str = "gpt-4o"
     api_key: str
     temperature: float = 0.0
@@ -25,7 +34,9 @@ class OpenAISettings(BaseSettings):
         env_file = ".env"
         env_file_encoding = 'utf-8'
 
-class AnthropicSettings(BaseSettings):
+
+class AnthropicSettings(BaseConfig):
+    env_prefix: ClassVar[str] = "ANTHROPIC_"
     model: str = "claude-3-opus-20240229"
     api_key: str
     temperature: float = 0.0
@@ -35,9 +46,27 @@ class AnthropicSettings(BaseSettings):
         env_file = ".env"
         env_file_encoding = 'utf-8'
 
+
+class GoogleAISettings(BaseConfig):
+    model: str = "gemini-pro"
+    api_key: str
+    temperature: float = 0.0
+
+    class Config:
+        env_prefix = "GOOGLE_"
+        env_file = ".env"
+        env_file_encoding = 'utf-8'
+
+
+class LLMSettings(BaseConfig):
+    llm_type: str = "openai"  # 'openai', 'google', or 'anthropic'
+
+
 # Initialize the chat models based on settings
 openai_settings = OpenAISettings()
 anthropic_settings = AnthropicSettings()
+google_ai_settings = GoogleAISettings()
+llm_settings = LLMSettings()
 
 # Initialize Slack settings
 slack_settings = SlackSettings()
