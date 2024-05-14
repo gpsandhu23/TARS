@@ -30,7 +30,7 @@ async def chat_endpoint(chat_request: ChatRequest, agent_manager: AgentManager =
     logging.info(f"Received chat request from {chat_request.user_name}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
-        agent_input = {'user_name': chat_request.user_name, 'message': chat_request.message}
+        agent_input = str({'user_name': chat_request.user_name, 'message': chat_request.message})
         agent_response = agent_manager.process_user_task(agent_input, chat_history)
         return {"response": agent_response}
     except Exception as e:
