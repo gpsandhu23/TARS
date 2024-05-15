@@ -53,8 +53,7 @@ class SlackBot:
     def process_message(self, event, client):
         user_id, channel_id = event.get('user'), event.get('channel')
         if self.is_direct_message(event):
-            response = self.handle_direct_message(event, client, user_id, channel_id)
-            return response
+            return self.handle_direct_message(event, client, user_id, channel_id)
 
     def is_direct_message(self, event):
         return 'channel_type' in event and event['channel_type'] == 'im' and 'bot_id' not in event
@@ -64,7 +63,7 @@ class SlackBot:
         ts = response['ts']
         user_info, user_real_name = self.fetch_user_info(client, user_id)
         agent_input = self.prepare_agent_input(event, user_real_name)
-        agent_response_text = self.agent_manager.process_user_task(str(agent_input), self.chat_history)  # Correctly invoke process_user_task
+        agent_response_text = self.agent_manager.process_user_task(str(agent_input), self.chat_history)
         self.send_response(client, channel_id, ts, agent_response_text)
         return agent_response_text
 
