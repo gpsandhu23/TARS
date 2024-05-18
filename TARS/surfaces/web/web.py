@@ -1,14 +1,15 @@
 import sys
 import os
 from langsmith import traceable
+import streamlit as st
+from graphs.agent import AgentManager
+import requests
+from urllib.parse import urlencode
 
 # Add the project root directory to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
-import streamlit as st
-from graphs.agent import AgentManager
 
 # Title of the web app
 st.title('TARS Web Interface')
@@ -42,3 +43,27 @@ def handle_message(user_input):
 # Button to send the message
 if st.button("Send"):
     handle_message(user_input)
+
+# GitHub OAuth integration
+if 'auth_state' not in st.session_state:
+    st.session_state.auth_state = None
+
+if st.button('Login with GitHub'):
+    # Generate a random state value for CSRF protection
+    import secrets
+    state = secrets.token_hex(16)
+    st.session_state.auth_state = state
+    # Prepare the GitHub OAuth URL
+    params = {
+        'client_id': os.getenv('GITHUB_CLIENT_ID'),
+        'redirect_uri': 'http://localhost:8501/auth',
+        'state': state,
+        'scope': 'read:user user:email',
+    }
+    url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+    # Redirect the user to GitHub for authentication
+    st.experimental_rerun(url)
+
+# Display authenticated user information
+if st.session_state.auth_state:
+    st.write(f"Authenticated as: {st.session_state.auth_state}")

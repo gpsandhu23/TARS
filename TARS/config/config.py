@@ -62,6 +62,10 @@ class LLMSettings(BaseConfig):
     llm_type: str = "openai"  # 'openai', 'google', or 'anthropic'
 
 
+class GitHubOAuthSettings(BaseConfig):
+    client_id: str = os.getenv("GITHUB_CLIENT_ID")
+    client_secret: str = os.getenv("GITHUB_CLIENT_SECRET")
+
 # Initialize the chat models based on settings
 openai_settings = OpenAISettings()
 anthropic_settings = AnthropicSettings()
@@ -70,3 +74,6 @@ llm_settings = LLMSettings()
 
 # Initialize Slack settings
 slack_settings = SlackSettings()
+
+# Initialize GitHub OAuth settings
+github_oauth_settings = GitHubOAuthSettings()
