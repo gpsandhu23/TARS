@@ -51,6 +51,8 @@ class AgentManager:
         ])
 
     def process_user_task(self, user_task, chat_history=None):
+        if user_task is None:
+            raise ValueError("user_task cannot be None")
         try:
             if chat_history is None:
                 chat_history = []
@@ -64,11 +66,3 @@ class AgentManager:
         except Exception as e:
             logging.error(f"Error in process_user_task: {e}")
             return "An error occurred while processing the task."
-
-# Usage
-if __name__ == "__main__":
-    agent_manager = AgentManager()
-    user_input = "What's the weather like today?"
-    output = agent_manager.process_user_task(user_input)
-    print(output)
-
