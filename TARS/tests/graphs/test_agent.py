@@ -1,5 +1,7 @@
 import unittest
 from graphs.agent import AgentManager
+from langchain.prompts import ChatPromptTemplate
+
 
 class TestAgentManager(unittest.TestCase):
     def setUp(self):
