@@ -1,7 +1,8 @@
 import unittest
+from unittest import mock
 from fastapi.testclient import TestClient
-from TARS.surfaces.API.api import app
-from TARS.graphs.agent import AgentManager
+from surfaces.API.api import app
+from graphs.agent import AgentManager
 
 class TestAPI(unittest.TestCase):
     def setUp(self):
