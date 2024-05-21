@@ -4,6 +4,8 @@ from graphs.agent import AgentManager
 import logging
 from langsmith import traceable
 from config.config import GitHubOAuthSettings
+import httpx
+import json
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -85,9 +87,19 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
     Returns:
         str: The access token, or None if the exchange fails.
     """
-    # Placeholder for the code exchange process
-    # Actual implementation will depend on GitHub's OAuth documentation
-    return "access_token_placeholder"
+    url = "https://github.com/login/oauth/access_token"
+    headers = {"Accept": "application/json"}
+    data = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, data=data)
+    if response.status_code == 200:
+        response_data = response.json()
+        return response_data.get("access_token")
+    return None
 
 async def validate_access_token_and_retrieve_user_info(access_token: str) -> dict:
     """
@@ -98,6 +110,13 @@ async def validate_access_token_and_retrieve_user_info(access_token: str) -> dic
     Returns:
         dict: A dictionary containing the user's GitHub information, or None if validation fails.
     """
-    # Placeholder for the access token validation and user information retrieval
-    # Actual implementation will depend on GitHub's API documentation
-    return {"user": "placeholder_user"}
+    url = "https://api.github.com/user"
+    headers = {
+        "Authorization": f"token {access_token}",
+        "Accept": "application/json"
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return None
