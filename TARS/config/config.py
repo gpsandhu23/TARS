@@ -63,8 +63,13 @@ class LLMSettings(BaseConfig):
 
 
 class GitHubOAuthSettings(BaseConfig):
-    client_id: str = os.getenv("GITHUB_CLIENT_ID")
-    client_secret: str = os.getenv("GITHUB_CLIENT_SECRET")
+    client_id: str
+    client_secret: str
+
+    class Config:
+        env_prefix = "GITHUB_"
+        env_file = ".env"
+        env_file_encoding = 'utf-8'
 
 # Initialize the chat models based on settings
 openai_settings = OpenAISettings()

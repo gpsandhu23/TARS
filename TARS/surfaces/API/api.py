@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from graphs.agent import AgentManager
 import logging
 from langsmith import traceable
-from config.config import GitHubOAuthSettings
+from config.config import github_oauth_settings
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +38,7 @@ async def chat_endpoint(chat_request: ChatRequest, agent_manager: AgentManager =
         logging.error(f"Error processing chat request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.post("/auth/github/callback")
+@app.get("/auth/github/callback")
 async def github_oauth_callback(request: Request):
     """
     Endpoint to handle the GitHub OAuth callback.
@@ -52,11 +52,10 @@ async def github_oauth_callback(request: Request):
     code = request.query_params.get('code')
     state = request.query_params.get('state')
 
-    if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing 'code' or 'state' in the callback request")
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing 'code' in the callback request")
 
     # Exchange the code for a GitHub access token
-    github_oauth_settings = GitHubOAuthSettings()
     access_token = await exchange_code_for_access_token(code, github_oauth_settings.client_id, github_oauth_settings.client_secret)
 
     if not access_token:
@@ -74,6 +73,7 @@ async def github_oauth_callback(request: Request):
 
     return {"status": "success", "user_info": user_info}
 
+
 async def exchange_code_for_access_token(code: str, client_id: str, client_secret: str) -> str:
     """
     Exchange the GitHub OAuth 'code' for an access token.
@@ -85,9 +85,25 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
     Returns:
         str: The access token, or None if the exchange fails.
     """
-    # Placeholder for the code exchange process
-    # Actual implementation will depend on GitHub's OAuth documentation
-    return "access_token_placeholder"
+    from httpx import AsyncClient
+    url = "https://github.com/login/oauth/access_token"
+    headers = {"Accept": "application/json"}
+    payload = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code
+    }
+
+    
+    async with AsyncClient() as client:
+        response = await client.post(url, headers=headers, data=payload)
+        logging.info(f"GitHub OAuth response status: {response.status_code}")
+        logging.info(f"GitHub OAuth response body: {response.text}")
+        response_data = response.json()
+        if 'access_token' in response_data:
+            return response_data['access_token']
+        else:
+            return None
 
 async def validate_access_token_and_retrieve_user_info(access_token: str) -> dict:
     """
@@ -98,6 +114,16 @@ async def validate_access_token_and_retrieve_user_info(access_token: str) -> dic
     Returns:
         dict: A dictionary containing the user's GitHub information, or None if validation fails.
     """
-    # Placeholder for the access token validation and user information retrieval
-    # Actual implementation will depend on GitHub's API documentation
-    return {"user": "placeholder_user"}
+    from httpx import AsyncClient
+    url = "https://api.github.com/user"
+    headers = {
+        "Authorization": f"token {access_token}",
+        "Accept": "application/json"
+    }
+    
+    async with AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return None
