@@ -7,6 +7,9 @@ from urllib.parse import urlencode
 # Title of the web app
 st.title('TARS Web Interface')
 
+# Placeholder for future content
+st.write("Content coming soon...")
+
 # GitHub OAuth integration
 if 'auth_state' not in st.session_state:
     st.session_state.auth_state = None
