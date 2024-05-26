@@ -44,6 +44,15 @@ Here's an example of how to interact with TARS via the web interface:
 
 4. TARS will process your request and display the response in the chat interface.
 
+## GitHub Actions for Deployment
+
+TARS now includes GitHub Actions workflows for automated deployment to AWS managed Kubernetes, utilizing the GitHub Container Registry for Docker images. These workflows are triggered by changes to specific branches:
+
+- **Stage Deployment**: Triggered by changes to the `stage` branch. The workflow builds the Docker image, pushes it to the GitHub Container Registry, and deploys it to the staging environment on Kubernetes.
+- **Prod Deployment**: Triggered by changes to the `main` branch. Similar to the stage deployment, it builds, pushes, and deploys the Docker image, but targets the production environment.
+
+To trigger a deployment, simply push your changes to the corresponding branch. The workflows are defined in `.github/workflows/deployment-stage.yml` and `.github/workflows/deployment-prod.yml`.
+
 ## Contributing
 
 We welcome contributions to help improve TARS! To get started:
