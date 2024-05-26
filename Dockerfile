@@ -5,16 +5,13 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy the requirements file into the container at /app
-COPY requirements.txt .
+COPY TARS/requirements.txt .
 
 # Install any dependencies in the requirements file
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the dir
-COPY . .
-
-# Change the working directory
-WORKDIR /app/TARS
+COPY TARS .
 
 # Command to run your application
 CMD ["python", "main.py"]
