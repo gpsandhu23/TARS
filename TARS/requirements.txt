@@ -16,3 +16,4 @@ langchain-anthropic
 langchain-openai
 pytest-asyncio
 langchain-google-genai
+langchain-community
