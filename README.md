@@ -53,6 +53,23 @@ TARS now includes GitHub Actions workflows for automated deployment to AWS manag
 
 To trigger a deployment, simply push your changes to the corresponding branch. The workflows are defined in `.github/workflows/deployment-stage.yml` and `.github/workflows/deployment-prod.yml`.
 
+## API Invocation
+
+To interact with TARS' APIs, you'll need an API key for authentication. This section outlines how to obtain an API key and use it to invoke the chat endpoint.
+
+### Using the API Key
+
+Once you have your API key, you can use it to authenticate your requests to the chat endpoint. Here's an example `curl` command to invoke the chat API:
+
+```bash
+curl -X POST "http://localhost:8000/chat" \
+     -H "Content-Type: application/json" \
+     -H "x-api-key: YOUR_API_KEY_HERE" \
+     -d '{"message": "Hello, TARS!", "user_name": "John Doe"}'
+```
+
+Replace `YOUR_API_KEY_HERE` with your actual API key. The response will contain the chat response from TARS.
+
 ## Contributing
 
 We welcome contributions to help improve TARS! To get started:
