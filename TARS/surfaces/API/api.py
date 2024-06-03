@@ -1,9 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from pydantic import BaseModel
 from graphs.agent import AgentManager
 import logging
 from langsmith import traceable
 from config.config import github_oauth_settings
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -17,9 +22,19 @@ class ChatRequest(BaseModel):
 def get_agent_manager():
     return AgentManager()
 
+# Define the dependency
+def verify_api_key(x_api_key: str = Header(None)):
+    logging.info(f"Verifying API Key: {x_api_key}")
+    logging.info(f"TARS_API_KEY from environment: {os.getenv('TARS_API_KEY')}")
+
+    if x_api_key != os.getenv("TARS_API_KEY"):
+        logging.warning("Invalid API Key")
+        raise HTTPException(status_code=400, detail="Invalid API Key")
+    return x_api_key
+
 @app.post("/chat")
 @traceable(name="Chat API")
-async def chat_endpoint(chat_request: ChatRequest, agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
+async def chat_endpoint(chat_request: ChatRequest, x_api_key: str = Depends(verify_api_key), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
     """
     Endpoint to process chat messages using an agent.
     Args:
