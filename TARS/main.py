@@ -25,11 +25,6 @@ if __name__ == "__main__":
     slack_process = Process(target=run_slack_bot)
     slack_process.start()
 
-    # Start the Streamlit web app
-    streamlit_process = Process(target=run_streamlit)
-    streamlit_process.start()
-
     # Join processes to the main process
     api_process.join()
     slack_process.join()
-    streamlit_process.join()
