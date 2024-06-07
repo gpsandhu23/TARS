@@ -1,0 +1,30 @@
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'TARS/**'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build Docker image
+      run: |
+        docker build -t myapp:latest .
+
+    - name: Push Docker image to container registry
+      run: |
+        echo "DOCKER_PASSWORD" | docker login -u "DOCKER_USERNAME" --password-stdin
+        docker tag myapp:latest DOCKER_USERNAME/myapp:latest
+        docker push DOCKER_USERNAME/myapp:latest
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f infrastructure/eks_setup.yaml
