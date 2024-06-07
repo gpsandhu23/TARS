@@ -87,3 +87,15 @@ We welcome contributions to help improve TARS! To get started:
 - `graphs/`: Contains the core agent logic and tool definitions.
 - `retrievers/`: Modules for retrieving data from external sources (Gmail, Google Calendar, etc.)
 - `surfaces/`: User interface implementations (Slack, web).
+
+## React UI Setup
+
+To set up and run the React UI for interacting with TARS' APIs, follow these steps:
+
+1. Navigate to the `client` directory in your terminal.
+
+2. Install the necessary dependencies by running `npm install`.
+
+3. Start the React development server with `npm start`. This will launch the React application in your default web browser.
+
+4. The React UI will communicate with the TARS backend API, allowing you to interact with TARS through a modern web interface.
