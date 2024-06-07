@@ -11,4 +11,12 @@ services:
     tty: true         # Allocate a pseudo-TTY
     volumes:
       - ./TARS:/app
-
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - type: volume
+        source: mydata
+        target: /data
+volumes:
+  mydata:
+    name: "mydata_volume"

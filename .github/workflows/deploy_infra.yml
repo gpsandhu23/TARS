@@ -22,7 +22,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-west-1
 
-    - name: Deploy Infrastructure
+    - name: Build and push Docker image
+      run: |
+        docker build -t myapp:latest .
+        docker tag myapp:latest 123456789.dkr.ecr.us-west-1.amazonaws.com/myapp:latest
+        aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-west-1.amazonaws.com
+        docker push 123456789.dkr.ecr.us-west-1.amazonaws.com/myapp:latest
+
+    - name: Deploy Infrastructure and Application
       run: |
         cd infrastructure
         chmod +x deploy.sh  # Ensure the script is executable
