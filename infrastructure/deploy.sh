@@ -2,7 +2,7 @@
 # Script to deploy the CloudFormation stack
 
 # Displaying the deployment initiation message
-echo "Deploying the CloudFormation Stack..."
+echo "Deploying the CloudFormation Stack"
 
 # Command to create the CloudFormation stack with specified capabilities
 aws cloudformation create-stack \
