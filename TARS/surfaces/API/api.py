@@ -52,11 +52,13 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_to
         dict: A dictionary containing the agent's response.
     """
     headers = dict(request.headers)
-    logging.info(f"Received API request to chat: {chat_request.dict()}, headers: {headers}")
+    logging.info(f"Received API request to chat headers: {chat_request.dict()}, headers: {headers}")
     body = await request.json()
-    logging.info(f"Received API request to chat: {body}")
+    logging.info(f"Received API request to chat body: {body}")
     token, user_name = x_github_token
+    logging.info(f"User name: {user_name}")
     message = chat_request['message'][0]['content']
+    logging.info(f"User message: {message}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
         agent_input = str({'user_name': user_name, 'message': message})
