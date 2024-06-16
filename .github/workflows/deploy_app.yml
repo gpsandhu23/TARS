@@ -40,7 +40,7 @@ jobs:
 
     - name: Update Image Tag in Production Deployment File
       run: |
-        sed -i 's|ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gpsandhu23/tars:${{ github.sha }}|' ./deployment/deployment-prod.yml
+        sed -i 's|ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER|ghcr.io/gpsandhu23/tars:${{ github.sha }}|' ./deployment/deployment.yml
 
     - name: Deploy to Production
       run: |
