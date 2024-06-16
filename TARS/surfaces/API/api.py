@@ -28,9 +28,6 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
     logging.info(f"Received API request to chat headers: {headers}")
     if x_github_token is None:
         raise HTTPException(status_code=400, detail="X-GitHub-Token header is missing")
-    # Replace 'expected_token' with the actual token value you expect
-    if x_github_token != os.getenv("TARS_API_KEY"):
-        raise HTTPException(status_code=403, detail="Invalid X-GitHub-Token header")
 
     # Validate that the token belongs to a particular username
     response = requests.get('https://api.github.com/user', headers={'Authorization': f'token {x_github_token}'})
