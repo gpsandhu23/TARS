@@ -58,6 +58,11 @@ async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_g
     logging.info(f"Received API request to chat headers: {headers}")
     body = await request.json()
     logging.info(f"Received API request to chat body: {body}")
+    messages = body.get('messages', [])
+    if messages:
+        message = messages[0].get('content', '')
+    else:
+        message = ''
     token, user_name = x_github_token
     logging.info(f"User name: {user_name}")
     message = request['message'][0]['content']
