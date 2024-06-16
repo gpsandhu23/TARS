@@ -75,22 +75,26 @@ async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_g
 
         # Format the response for GHCP
         response = {
-            "id": "chatcmpl-123",
-            "object": "chat.completion.chunk",
-            "created": 1694268190,  # Placeholder
-            "model": "gpt-3.5-turbo-0125",  # Placeholder
-            "system_fingerprint": "fp_44709d6fcb",  # Placeholder
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {
-                        "content": agent_response
-                    },
-                    "logprobs": None,
-                    "finish_reason": None  # Placeholder
-                }
-            ]
+            "data": {
+                "id": "chatcmpl-123",
+                "object": "chat.completion.chunk",
+                "created": 1694268190,  # Placeholder
+                "model": "gpt-3.5-turbo-0125",  # Placeholder
+                "system_fingerprint": "fp_44709d6fcb",  # Placeholder
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "role": "assistant",
+                            "content": agent_response
+                        },
+                        "logprobs": None,
+                        "finish_reason": None  # Placeholder
+                    }
+                ]
+            }
         }
+        logging.info(f"Returning response: {response}")
 
         return response
 
