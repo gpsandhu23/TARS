@@ -35,6 +35,7 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
     response = requests.get('https://api.github.com/user', headers={'Authorization': f'token {x_github_token}'})
     response.raise_for_status()  # Raise exception if the request failed
     user_data = response.json()
+    logging.info(f"GitHub user data: {user_data}")
     if user_data['login'] != 'gpsandhu23':  # only limit this for my user for now
         raise HTTPException(status_code=403, detail="Token does not belong to the expected user")
 
