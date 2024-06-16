@@ -22,7 +22,9 @@ class ChatRequest(BaseModel):
 def get_agent_manager():
     return AgentManager()
 
-async def verify_github_token(x_github_token: str = Header(None)):
+async def verify_github_token(request:Request, x_github_token: str = Header(None)):
+    headers = dict(request.headers)
+    logging.info(f"Received API request to chat headers: {headers}")
     if x_github_token is None:
         raise HTTPException(status_code=400, detail="X-GitHub-Token header is missing")
     # Replace 'expected_token' with the actual token value you expect
@@ -67,6 +69,8 @@ async def github_oauth_callback(request: Request):
     Returns:
         dict: A dictionary containing the status of the OAuth process.
     """
+    headers = dict(request.headers)
+    logging.info(f"Received API request to auth/github/callback headers: {headers}")
     # Extract the code and state from the callback request
     code = request.query_params.get('code')
     state = request.query_params.get('state')
