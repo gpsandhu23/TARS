@@ -26,6 +26,8 @@ def get_agent_manager():
 async def verify_github_token(request:Request, x_github_token: str = Header(None)):
     headers = dict(request.headers)
     logging.info(f"Received API request to chat headers: {headers}")
+    body = await request.json()
+    logging.info(f"Received API request to chat: {body}")
     if x_github_token is None:
         raise HTTPException(status_code=400, detail="X-GitHub-Token header is missing")
 
@@ -51,6 +53,8 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_to
     """
     headers = dict(request.headers)
     logging.info(f"Received API request to chat: {chat_request.dict()}, headers: {headers}")
+    body = await request.json()
+    logging.info(f"Received API request to chat: {body}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
         agent_input = str({'user_name': chat_request.user_name, 'message': chat_request.message})
