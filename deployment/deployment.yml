@@ -1,4 +1,3 @@
-# deployment.yml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,6 +16,22 @@ spec:
       - name: tars
         image: ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER  # Will be replaced in the workflow
         imagePullPolicy: Always
+        ports:
+          - containerPort: 8000
         envFrom:
         - secretRef:
             name: tars-secrets  # Reference to the secret containing all environment variables
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tars-service
+spec:
+  type: LoadBalancer  # For cloud environments, creates an external load balancer
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: tars
