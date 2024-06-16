@@ -86,7 +86,7 @@ async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_g
                         "index": 0,
                         "delta": {
                             "role": "assistant",
-                            "content": agent_response
+                            "content": ""
                         },
                         "logprobs": None,
                         "finish_reason": None  # Placeholder
