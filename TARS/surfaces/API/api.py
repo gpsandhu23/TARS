@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from httpx import AsyncClient
+import aiohttp
+import asyncio
 from pydantic import BaseModel
 from graphs.agent import AgentManager
 import requests
@@ -9,6 +11,11 @@ from config.config import github_oauth_settings
 import os
 import json
 from dotenv import load_dotenv
+from aiohttp import web
+from fastapi import FastAPI, Request, Depends
+import aiohttp
+from starlette.responses import Response
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,45 +52,44 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
 
 
 @app.post("/chat")
-async def chat_endpoint(request: Request, token: str = Depends(verify_github_token)):
-    """
-    Endpoint to process chat messages using the GitHub Copilot API.
-    Args:
-        request (Request): The request object containing the chat data.
+async def chat_endpoint(request: Request, github_token: str = Depends(verify_github_token)):
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {github_token}"
+        }
+        logging.info(f"Request headers: {headers}")
+        body = await request.json()
+        logging.info(f"Received API request to chat: {body}")
 
-    Returns:
-        dict: A dictionary containing the agent's response.
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f'Bearer {token}',
-    }
-    logging.info(f"Received API request to chat headers: {dict(request.headers)}")
-    logging.info(f"Received API request to chat body: {await request.json()}")
-    body = await request.json()
-    messages = body.get('messages', [])
-    if messages:
-        message = messages[0].get('content', '')
-    else:
-        message = ''
+        # Extract messages from the body
+        messages = body.get('messages', [])
+        if messages:
+            # Get the most recent message (the last one in the list)
+            recent_message = messages[-1]
+            message_content = recent_message.get('content', '')
+            logging.info(f"Most recent message: {message_content}")
+        else:
+            message_content = ''
+            logging.info("No messages found")
 
-    logging.info(f"Received message: {message}")
+        # Prepare the body for the API call to GitHub Copilot
+        request_body = {
+            "stream": True,
+            "messages": [{"role": "user", "content": message_content}],
+            "max_tokens": 50,
+            "temperature": 0.5,
+        }
 
-    data = {
-        "stream": True,  # Set this to enable streaming
-        "messages": [{"role": "user", "content": message}],
-        "max_tokens": 50,
-        "temperature": 0.5,
-    }
-    logging.info(f"Request data: {data}")
-    async with AsyncClient() as client:
-        response = await client.post(
-            "https://api.githubcopilot.com/chat/completions",
-            headers=headers,
-            data=json.dumps(data)
-        )
-    logging.info(f"Sending response: {response.json()}")
-    return response.json()
+        # Post the chat request to GitHub Copilot and log the response
+        async with session.post("https://api.githubcopilot.com/chat/completions", headers=headers, json=request_body) as capi_response:
+            response_body = await capi_response.read()
+            logging.info(f"Received API response status: {capi_response.status}")
+            logging.info(f"Received API response headers: {capi_response.headers}")
+            logging.info(f"Received API response body: {response_body}")
+            
+            # Return the response from GitHub Copilot directly to the client
+            return Response(content=response_body, media_type="application/json", status_code=capi_response.status)
 
 
 # add a new endpoint to test the API
