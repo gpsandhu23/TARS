@@ -38,7 +38,7 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
     if user_data['login'] != 'gpsandhu23':  # only limit this for my user for now
         raise HTTPException(status_code=403, detail="Token does not belong to the expected user")
 
-    return x_github_token
+    return x_github_token, user_data['login']
 
 @app.post("/chat")
 @traceable(name="Chat API")
@@ -55,9 +55,11 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_to
     logging.info(f"Received API request to chat: {chat_request.dict()}, headers: {headers}")
     body = await request.json()
     logging.info(f"Received API request to chat: {body}")
+    token, user_name = x_github_token
+    message = chat_request['message'][0]['content']
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
-        agent_input = str({'user_name': chat_request.user_name, 'message': chat_request.message})
+        agent_input = str({'user_name': user_name, 'message': message})
         agent_response = agent_manager.process_user_task(agent_input, chat_history)
         return {"response": agent_response}
     except Exception as e:
