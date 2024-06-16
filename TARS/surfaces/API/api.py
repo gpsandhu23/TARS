@@ -43,22 +43,24 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
 
 @app.post("/chat")
 @traceable(name="Chat API")
-async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_token: str = Depends(verify_github_token), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
+async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_github_token), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
     """
     Endpoint to process chat messages using an agent.
     Args:
-        chat_request (ChatRequest): The chat request containing the message and user name.
+        request (Request): The request object containing the chat data.
+        x_github_token (str): The GitHub access token.
+        agent_manager (AgentManager): The agent manager instance.
 
     Returns:
         dict: A dictionary containing the agent's response.
     """
     headers = dict(request.headers)
-    logging.info(f"Received API request to chat headers: {chat_request.dict()}, headers: {headers}")
+    logging.info(f"Received API request to chat headers: {headers}")
     body = await request.json()
     logging.info(f"Received API request to chat body: {body}")
     token, user_name = x_github_token
     logging.info(f"User name: {user_name}")
-    message = chat_request['message'][0]['content']
+    message = request['message'][0]['content']
     logging.info(f"User message: {message}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
