@@ -65,7 +65,6 @@ async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_g
         message = ''
     token, user_name = x_github_token
     logging.info(f"User name: {user_name}")
-    message = request['message'][0]['content']
     logging.info(f"User message: {message}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
