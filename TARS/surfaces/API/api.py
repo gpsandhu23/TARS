@@ -53,6 +53,11 @@ async def chat_endpoint(chat_request: ChatRequest, x_api_key: str = Depends(veri
         logging.error(f"Error processing chat request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+# add a new endpoint to test the API
+@app.get("/test")
+async def test_endpoint():
+    return {"message": "Hola! Welcome to our API!"}
+
 @app.get("/auth/github/callback")
 async def github_oauth_callback(request: Request):
     """
