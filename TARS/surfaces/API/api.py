@@ -72,7 +72,28 @@ async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_g
         logging.info(f"Processing chat request: {agent_input}")
         agent_response = agent_manager.process_user_task(agent_input, chat_history)
         logging.info(f"Agent response: {agent_response}")
-        return {"response": agent_response}
+
+        # Format the response for GHCP
+        response = {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1694268190,  # Placeholder
+            "model": "gpt-3.5-turbo-0125",  # Placeholder
+            "system_fingerprint": "fp_44709d6fcb",  # Placeholder
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "content": agent_response
+                    },
+                    "logprobs": None,
+                    "finish_reason": None  # Placeholder
+                }
+            ]
+        }
+
+        return response
+
     except Exception as e:
         logging.error(f"Error processing chat request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
