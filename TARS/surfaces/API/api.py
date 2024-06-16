@@ -22,19 +22,17 @@ class ChatRequest(BaseModel):
 def get_agent_manager():
     return AgentManager()
 
-# Define the dependency
-def verify_api_key(x_api_key: str = Header(None)):
-    logging.info(f"Verifying API Key: {x_api_key}")
-    logging.info(f"TARS_API_KEY from environment: {os.getenv('TARS_API_KEY')}")
-
-    if x_api_key != os.getenv("TARS_API_KEY"):
-        logging.warning("Invalid API Key")
-        raise HTTPException(status_code=400, detail="Invalid API Key")
-    return x_api_key
+async def verify_github_token(x_github_token: str = Header(None)):
+    if x_github_token is None:
+        raise HTTPException(status_code=400, detail="X-GitHub-Token header is missing")
+    # Replace 'expected_token' with the actual token value you expect
+    if x_github_token != os.getenv("TARS_API_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid X-GitHub-Token header")
+    return x_github_token
 
 @app.post("/chat")
 @traceable(name="Chat API")
-async def chat_endpoint(chat_request: ChatRequest, x_api_key: str = Depends(verify_api_key), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
+async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_token: str = Depends(verify_github_token), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
     """
     Endpoint to process chat messages using an agent.
     Args:
@@ -43,7 +41,8 @@ async def chat_endpoint(chat_request: ChatRequest, x_api_key: str = Depends(veri
     Returns:
         dict: A dictionary containing the agent's response.
     """
-    logging.info(f"Received chat request from {chat_request.user_name}")
+    headers = dict(request.headers)
+    logging.info(f"Received API request to chat: {chat_request.dict()}, headers: {headers}")
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
         agent_input = str({'user_name': chat_request.user_name, 'message': chat_request.message})
