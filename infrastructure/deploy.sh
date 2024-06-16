@@ -1,14 +1,25 @@
 #!/bin/bash
-# Script to deploy the CloudFormation stack
 
-# Displaying the deployment initiation message
-echo "Deploying the CloudFormation Stack"
+# Set variables
+CLUSTER_NAME="tars-test"
+REGION="us-west-2"
+NAMESPACE="default"
+SECRET_NAME="tars-secrets"
 
-# Command to create the CloudFormation stack with specified capabilities
-aws cloudformation create-stack \
-  --stack-name MyEKSStack \
-  --template-body file://eks_setup.yaml \
-  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+# Create EKS cluster
+eksctl create cluster --name $CLUSTER_NAME --region $REGION --nodes 2 --node-type t3.medium --managed
 
-# Notification that deployment has been initiated
-echo "Deployment initiated. Check the AWS Console for stack status."
+# Create namespace (if it doesn't exist)
+kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
+# Check if the .env file exists
+if [ -f .env ]; then
+    # Create secrets from .env file
+    kubectl create secret generic $SECRET_NAME --from-env-file=.env --namespace $NAMESPACE
+    echo "Secrets created successfully from .env file."
+else
+    echo "Error: .env file not found. Secrets not created."
+    exit 1
+fi
+
+echo "Infrastructure setup and secrets creation completed successfully!"

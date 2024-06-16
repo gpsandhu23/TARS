@@ -1,0 +1,22 @@
+# deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tars-deployment
+spec:
+  replicas: 1  # Set the number of replicas for production
+  selector:
+    matchLabels:
+      app: tars
+  template:
+    metadata:
+      labels:
+        app: tars
+    spec:
+      containers:
+      - name: tars
+        image: ghcr.io/gpsandhu23/tars:IMAGE_TAG_PLACEHOLDER  # Will be replaced in the workflow
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: tars-secrets  # Reference to the secret containing all environment variables
