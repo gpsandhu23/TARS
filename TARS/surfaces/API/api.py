@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from pydantic import BaseModel
 from graphs.agent import AgentManager
+import requests
 import logging
 from langsmith import traceable
 from config.config import github_oauth_settings
@@ -30,6 +31,14 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
     # Replace 'expected_token' with the actual token value you expect
     if x_github_token != os.getenv("TARS_API_KEY"):
         raise HTTPException(status_code=403, detail="Invalid X-GitHub-Token header")
+
+    # Validate that the token belongs to a particular username
+    response = requests.get('https://api.github.com/user', headers={'Authorization': f'token {x_github_token}'})
+    response.raise_for_status()  # Raise exception if the request failed
+    user_data = response.json()
+    if user_data['login'] != 'gpsandhu23':  # only limit this for my user for now
+        raise HTTPException(status_code=403, detail="Token does not belong to the expected user")
+
     return x_github_token
 
 @app.post("/chat")
