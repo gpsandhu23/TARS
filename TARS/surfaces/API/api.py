@@ -60,7 +60,9 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest, x_github_to
     try:
         chat_history = []  # Eventually, fetch this from a persistent storage
         agent_input = str({'user_name': user_name, 'message': message})
+        logging.info(f"Processing chat request: {agent_input}")
         agent_response = agent_manager.process_user_task(agent_input, chat_history)
+        logging.info(f"Agent response: {agent_response}")
         return {"response": agent_response}
     except Exception as e:
         logging.error(f"Error processing chat request: {str(e)}", exc_info=True)
