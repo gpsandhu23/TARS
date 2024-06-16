@@ -30,7 +30,7 @@ metadata:
 spec:
   type: LoadBalancer  # For cloud environments, creates an external load balancer
   ports:
-    - port: 443  # Expose the service on port 443
+    - port: 80
       targetPort: 8000
       protocol: TCP
   selector:
