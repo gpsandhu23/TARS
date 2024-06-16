@@ -1,17 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
-from httpx import AsyncClient
 import aiohttp
-import asyncio
 from pydantic import BaseModel
 from graphs.agent import AgentManager
 import requests
 import logging
 from langsmith import traceable
 from config.config import github_oauth_settings
-import os
-import json
 from dotenv import load_dotenv
-from aiohttp import web
 from fastapi import FastAPI, Request, Depends
 import aiohttp
 from starlette.responses import Response
@@ -50,7 +45,7 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
 
     return x_github_token
 
-
+@traceable(name="API Chat Endpoint")
 @app.post("/chat")
 async def chat_endpoint(request: Request, github_token: str = Depends(verify_github_token)):
     async with aiohttp.ClientSession() as session:
