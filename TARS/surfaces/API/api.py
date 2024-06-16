@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
+from httpx import AsyncClient
 from pydantic import BaseModel
 from graphs.agent import AgentManager
 import requests
@@ -6,6 +7,7 @@ import logging
 from langsmith import traceable
 from config.config import github_oauth_settings
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -39,68 +41,50 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
     if user_data['login'] != 'gpsandhu23':  # only limit this for my user for now
         raise HTTPException(status_code=403, detail="Token does not belong to the expected user")
 
-    return x_github_token, user_data['login']
+    return x_github_token
+
 
 @app.post("/chat")
-@traceable(name="Chat API")
-async def chat_endpoint(request: Request, x_github_token: str = Depends(verify_github_token), agent_manager: AgentManager = Depends(get_agent_manager)) -> dict:
+async def chat_endpoint(request: Request, token: str = Depends(verify_github_token)):
     """
-    Endpoint to process chat messages using an agent.
+    Endpoint to process chat messages using the GitHub Copilot API.
     Args:
         request (Request): The request object containing the chat data.
-        x_github_token (str): The GitHub access token.
-        agent_manager (AgentManager): The agent manager instance.
 
     Returns:
         dict: A dictionary containing the agent's response.
     """
-    headers = dict(request.headers)
-    logging.info(f"Received API request to chat headers: {headers}")
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f'Bearer {token}',
+    }
+    logging.info(f"Received API request to chat headers: {dict(request.headers)}")
+    logging.info(f"Received API request to chat body: {await request.json()}")
     body = await request.json()
-    logging.info(f"Received API request to chat body: {body}")
     messages = body.get('messages', [])
     if messages:
         message = messages[0].get('content', '')
     else:
         message = ''
-    token, user_name = x_github_token
-    logging.info(f"User name: {user_name}")
-    logging.info(f"User message: {message}")
-    try:
-        chat_history = []  # Eventually, fetch this from a persistent storage
-        agent_input = str({'user_name': user_name, 'message': message})
-        logging.info(f"Processing chat request: {agent_input}")
-        agent_response = agent_manager.process_user_task(agent_input, chat_history)
-        logging.info(f"Agent response: {agent_response}")
 
-        # Format the response for GHCP
-        response = {
-            "data": {
-                "id": "chatcmpl-123",
-                "object": "chat.completion.chunk",
-                "created": 1694268190,  # Placeholder
-                "model": "gpt-3.5-turbo-0125",  # Placeholder
-                "system_fingerprint": "fp_44709d6fcb",  # Placeholder
-                "choices": [
-                    {
-                        "index": 0,
-                        "delta": {
-                            "role": "assistant",
-                            "content": ""
-                        },
-                        "logprobs": None,
-                        "finish_reason": None  # Placeholder
-                    }
-                ]
-            }
-        }
-        logging.info(f"Returning response: {response}")
+    logging.info(f"Received message: {message}")
 
-        return response
+    data = {
+        "stream": True,  # Set this to enable streaming
+        "messages": [{"role": "user", "content": message}],
+        "max_tokens": 50,
+        "temperature": 0.5,
+    }
+    logging.info(f"Request data: {data}")
+    async with AsyncClient() as client:
+        response = await client.post(
+            "https://api.githubcopilot.com/chat/completions",
+            headers=headers,
+            data=json.dumps(data)
+        )
+    logging.info(f"Sending response: {response.json()}")
+    return response.json()
 
-    except Exception as e:
-        logging.error(f"Error processing chat request: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # add a new endpoint to test the API
 @app.get("/test")
