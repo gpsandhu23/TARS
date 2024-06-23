@@ -72,7 +72,7 @@ async def chat_endpoint(request: Request, github_token: str = Depends(verify_git
         request_body = {
             "stream": True,
             "messages": [{"role": "user", "content": message_content}],
-            "max_tokens": 50,
+            "max_tokens": 5000,
             "temperature": 0.5,
         }
 
