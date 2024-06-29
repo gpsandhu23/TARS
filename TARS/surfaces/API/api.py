@@ -127,7 +127,7 @@ async def github_oauth_callback(request: Request):
     # This is a placeholder for storing the access token and user information
     # Actual implementation will depend on the application's requirements
 
-    return {"status": "success", "user_info": user_info}
+    return {"status": "success", "user_info": user_info, "user_token": access_token}
 
 
 async def exchange_code_for_access_token(code: str, client_id: str, client_secret: str) -> str:
