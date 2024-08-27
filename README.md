@@ -30,13 +30,16 @@ TARS consists of the following main components:
    - Slack API: Set the `SLACK_BOT_TOKEN` and `SLACK_USER_TOKEN` environment variables with your Slack app credentials.
    - OpenAI API: Set the `OPENAI_API_KEY` environment variable with your OpenAI API key.
 
-4. Run the web interface: `streamlit run surfaces/web/web.py`
+4. Run the React-based web interface:
+   - Navigate to the `TARS/surfaces/web/react-app` directory: `cd TARS/surfaces/web/react-app`
+   - Install the necessary dependencies: `npm install`
+   - Start the React app: `npm start`
 
 ## Usage Examples
 
 Here's an example of how to interact with TARS via the web interface:
 
-1. Go to `http://localhost:8501` in your web browser.
+1. Go to `http://localhost:3000` in your web browser.
 
 2. Type in a request, such as "Summarize my unread emails from the past day".
 
