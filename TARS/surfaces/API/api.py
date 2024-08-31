@@ -21,13 +21,35 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 class ChatRequest(BaseModel):
+    """
+    Pydantic model for chat requests.
+    """
     message: str
     user_name: str = "Unknown User"
 
 def get_agent_manager():
+    """
+    Factory function to create and return an AgentManager instance.
+
+    Returns:
+        AgentManager: An instance of the AgentManager class.
+    """
     return AgentManager()
 
-async def verify_github_token(request:Request, x_github_token: str = Header(None)):
+async def verify_github_token(request: Request, x_github_token: str = Header(None)):
+    """
+    Verify the GitHub token provided in the request header.
+
+    Args:
+        request (Request): The incoming request object.
+        x_github_token (str, optional): The GitHub token from the request header.
+
+    Returns:
+        str: The verified GitHub token.
+
+    Raises:
+        HTTPException: If the token is missing or invalid.
+    """
     headers = dict(request.headers)
     logging.info(f"Received API request to chat headers: {headers}")
     body = await request.json()
@@ -48,6 +70,16 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
 @traceable(name="API Chat Endpoint")
 @app.post("/chat")
 async def chat_endpoint(request: Request, github_token: str = Depends(verify_github_token)):
+    """
+    Handle chat requests and forward them to GitHub Copilot.
+
+    Args:
+        request (Request): The incoming request object.
+        github_token (str): The verified GitHub token.
+
+    Returns:
+        Response: The response from GitHub Copilot.
+    """
     async with aiohttp.ClientSession() as session:
         headers = {
             "Content-Type": "application/json",
@@ -86,21 +118,29 @@ async def chat_endpoint(request: Request, github_token: str = Depends(verify_git
             # Return the response from GitHub Copilot directly to the client
             return Response(content=response_body, media_type="application/json", status_code=capi_response.status)
 
-
-# add a new endpoint to test the API
 @app.get("/test")
 async def test_endpoint():
+    """
+    A simple test endpoint to check if the API is working.
+
+    Returns:
+        dict: A dictionary containing a welcome message.
+    """
     return {"message": "Hola! Welcome to our API!"}
 
 @app.get("/auth/github/callback")
 async def github_oauth_callback(request: Request):
     """
-    Endpoint to handle the GitHub OAuth callback.
+    Handle the GitHub OAuth callback.
+
     Args:
         request (Request): The request object containing the callback data.
 
     Returns:
-        dict: A dictionary containing the status of the OAuth process.
+        dict: A dictionary containing the status of the OAuth process and user information.
+
+    Raises:
+        HTTPException: If there's an error during the OAuth process.
     """
     headers = dict(request.headers)
     logging.info(f"Received API request to auth/github/callback headers: {headers}")
@@ -129,10 +169,10 @@ async def github_oauth_callback(request: Request):
 
     return {"status": "success", "user_info": user_info}
 
-
 async def exchange_code_for_access_token(code: str, client_id: str, client_secret: str) -> str:
     """
     Exchange the GitHub OAuth 'code' for an access token.
+
     Args:
         code (str): The 'code' received from the GitHub OAuth callback.
         client_id (str): The GitHub OAuth app's client ID.
@@ -150,7 +190,6 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
         "code": code
     }
 
-    
     async with AsyncClient() as client:
         response = await client.post(url, headers=headers, data=payload)
         logging.info(f"GitHub OAuth response status: {response.status_code}")
@@ -164,6 +203,7 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
 async def validate_access_token_and_retrieve_user_info(access_token: str) -> dict:
     """
     Validate the GitHub access token and retrieve user information.
+
     Args:
         access_token (str): The GitHub access token.
 
