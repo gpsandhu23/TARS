@@ -1,17 +1,17 @@
-# Use the official Python 3.10 image as a base image
-FROM python:3.10-slim
+# Use the official Node.js 14 image as a base image
+FROM node:14-slim
 
 # Set the working directory in the Docker container
 WORKDIR /app
 
-# Copy the requirements file into the container at /app
-COPY TARS/requirements.txt .
+# Copy the package.json and package-lock.json files into the container at /app
+COPY package.json package-lock.json ./
 
-# Install any dependencies in the requirements file
-RUN pip install --no-cache-dir -r requirements.txt
+# Install any dependencies in the package.json file
+RUN npm install
 
-# Copy the dir
-COPY TARS .
+# Copy the rest of the application files to the container
+COPY . .
 
 # Command to run your application
-CMD ["python", "main.py"]
+CMD ["node", "main.js"]

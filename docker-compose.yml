@@ -11,3 +11,4 @@ services:
     tty: true         # Allocate a pseudo-TTY
     volumes:
       - ./TARS:/app
+    command: ["node", "main.js"]
