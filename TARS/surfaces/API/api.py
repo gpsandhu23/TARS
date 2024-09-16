@@ -11,6 +11,9 @@ from fastapi import FastAPI, Request, Depends
 import aiohttp
 from starlette.responses import Response
 import logging
+from graphs.core_agent import run_core_agent
+from metrics.event_instrumentation import IncomingUserEvent
+from datetime import datetime, timezone
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,13 +24,89 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 class ChatRequest(BaseModel):
+    """
+    Pydantic model for chat requests.
+    """
     message: str
     user_name: str = "Unknown User"
 
 def get_agent_manager():
+    """
+    Factory function to create and return an AgentManager instance.
+
+    Returns:
+        AgentManager: An instance of the AgentManager class.
+    """
     return AgentManager()
 
-async def verify_github_token(request:Request, x_github_token: str = Header(None)):
+def log_user_event(event: IncomingUserEvent):
+    """
+    Log the user event for metrics and analysis.
+
+    Args:
+        event: The IncomingUserEvent to be logged.
+    """
+    # Here you would implement the actual logging logic
+    # This could involve sending the event to a database, logging service, etc.
+    logging.info(f"User Event Logged: {event.dict()}")
+
+@traceable(name="API Chat Endpoint")
+@app.post("/chat")
+async def chat_endpoint(request: Request):
+    """
+    Handle chat requests and forward them to the core agent.
+
+    Args:
+        request (Request): The incoming request object.
+
+    Returns:
+        Response: The response from the core agent.
+    """
+    request_body = await request.json()
+
+    # Create and log the IncomingUserEvent
+    user_event = IncomingUserEvent(
+        user_id=request_body.get('user_id', 'Unknown User'),
+        user_name=request_body.get('user_name', 'Unknown User'),
+        event_time=datetime.now(timezone.utc),
+        capability_invoked="TARS",
+        user_agent=request_body.get('user_agent', 'API'),
+        response_satisfaction="none"
+    )
+    log_user_event(user_event)
+
+    # Prepare input for run_core_agent
+    user_input = {
+        'user_name': user_event.user_name,
+        'message': request_body.get('message', '')
+    }
+    # Add any additional fields that might be present in the request
+    user_input.update({k: v for k, v in request_body.items() if k not in user_input})
+
+    # Get the generator from run_core_agent
+    agent_response_generator = run_core_agent(user_id=user_event.user_id, user_message=str(user_input))
+
+    # Collect all responses from the generator
+    agent_response_text = ""
+    for response_part in agent_response_generator:
+        agent_response_text += response_part
+
+    return {"response": agent_response_text}
+
+async def verify_github_token(request: Request, x_github_token: str = Header(None)):
+    """
+    Verify the GitHub token provided in the request header.
+
+    Args:
+        request (Request): The incoming request object.
+        x_github_token (str, optional): The GitHub token from the request header.
+
+    Returns:
+        str: The verified GitHub token.
+
+    Raises:
+        HTTPException: If the token is missing or invalid.
+    """
     headers = dict(request.headers)
     logging.info(f"Received API request to chat headers: {headers}")
     body = await request.json()
@@ -45,9 +124,19 @@ async def verify_github_token(request:Request, x_github_token: str = Header(None
 
     return x_github_token
 
-@traceable(name="API Chat Endpoint")
-@app.post("/chat")
+@traceable(name="API GitHub Chat Endpoint")
+@app.post("/chat_github")
 async def chat_endpoint(request: Request, github_token: str = Depends(verify_github_token)):
+    """
+    Handle chat requests and forward them to GitHub Copilot.
+
+    Args:
+        request (Request): The incoming request object.
+        github_token (str): The verified GitHub token.
+
+    Returns:
+        Response: The response from GitHub Copilot.
+    """
     async with aiohttp.ClientSession() as session:
         headers = {
             "Content-Type": "application/json",
@@ -86,21 +175,29 @@ async def chat_endpoint(request: Request, github_token: str = Depends(verify_git
             # Return the response from GitHub Copilot directly to the client
             return Response(content=response_body, media_type="application/json", status_code=capi_response.status)
 
-
-# add a new endpoint to test the API
 @app.get("/test")
 async def test_endpoint():
+    """
+    A simple test endpoint to check if the API is working.
+
+    Returns:
+        dict: A dictionary containing a welcome message.
+    """
     return {"message": "Hola! Welcome to our API!"}
 
 @app.get("/auth/github/callback")
 async def github_oauth_callback(request: Request):
     """
-    Endpoint to handle the GitHub OAuth callback.
+    Handle the GitHub OAuth callback.
+
     Args:
         request (Request): The request object containing the callback data.
 
     Returns:
-        dict: A dictionary containing the status of the OAuth process.
+        dict: A dictionary containing the status of the OAuth process and user information.
+
+    Raises:
+        HTTPException: If there's an error during the OAuth process.
     """
     headers = dict(request.headers)
     logging.info(f"Received API request to auth/github/callback headers: {headers}")
@@ -129,10 +226,10 @@ async def github_oauth_callback(request: Request):
 
     return {"status": "success", "user_info": user_info, "user_token": access_token}
 
-
 async def exchange_code_for_access_token(code: str, client_id: str, client_secret: str) -> str:
     """
     Exchange the GitHub OAuth 'code' for an access token.
+
     Args:
         code (str): The 'code' received from the GitHub OAuth callback.
         client_id (str): The GitHub OAuth app's client ID.
@@ -150,7 +247,6 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
         "code": code
     }
 
-    
     async with AsyncClient() as client:
         response = await client.post(url, headers=headers, data=payload)
         logging.info(f"GitHub OAuth response status: {response.status_code}")
@@ -164,6 +260,7 @@ async def exchange_code_for_access_token(code: str, client_id: str, client_secre
 async def validate_access_token_and_retrieve_user_info(access_token: str) -> dict:
     """
     Validate the GitHub access token and retrieve user information.
+
     Args:
         access_token (str): The GitHub access token.
 

@@ -3,27 +3,16 @@ import os
 import streamlit as st
 import requests
 from urllib.parse import urlencode
-
+from graphs.core_agent import run_core_agent
 # Title of the web app
 st.title('TARS Web Interface')
 
-# Placeholder for future content
-st.write("Content coming soon...")
+# Add a text input for user task
+user_task = st.text_input("Enter your task")
 
-# GitHub OAuth integration
-if 'auth_state' not in st.session_state:
-    st.session_state.auth_state = None
-
-if st.button('Login with GitHub'):
-    # Generate a random state value for CSRF protection
-    import secrets
-    state = secrets.token_hex(16)
-    st.session_state.auth_state = state
-    # Prepare the GitHub OAuth URL
-    params = {
-        'client_id': "Iv23liMdY6VduLyR6gfb",
-        'state': state
-    }
-    url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
-    # Redirect the user to GitHub for authentication
-    st.query_params(redirect=url)
+# Add a button to submit the task
+if st.button('Submit Task'):
+    if user_task:
+        # Call the core agent with the user task
+        response = run_core_agent(user_task)
+        st.write(response)
