@@ -12,8 +12,6 @@ def run_slack_bot():
     bot.start()
 
 def run_streamlit():
-
-    # Command to run the Streamlit app with the updated environment
     subprocess.run(["streamlit", "run", "surfaces/web/web.py"])
 
 if __name__ == "__main__":
@@ -25,6 +23,10 @@ if __name__ == "__main__":
     slack_process = Process(target=run_slack_bot)
     slack_process.start()
 
-    # Join processes to the main process
-    api_process.join()
-    slack_process.join()
+    # Start the Streamlit app
+    streamlit_process = Process(target=run_streamlit)
+    streamlit_process.start()
+
+    # Wait for all processes to complete
+    for process in [api_process, slack_process, streamlit_process]:
+        process.join()

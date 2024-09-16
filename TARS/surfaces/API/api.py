@@ -11,6 +11,9 @@ from fastapi import FastAPI, Request, Depends
 import aiohttp
 from starlette.responses import Response
 import logging
+from graphs.core_agent import run_core_agent
+from metrics.event_instrumentation import IncomingUserEvent
+from datetime import datetime, timezone
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,6 +38,60 @@ def get_agent_manager():
         AgentManager: An instance of the AgentManager class.
     """
     return AgentManager()
+
+def log_user_event(event: IncomingUserEvent):
+    """
+    Log the user event for metrics and analysis.
+
+    Args:
+        event: The IncomingUserEvent to be logged.
+    """
+    # Here you would implement the actual logging logic
+    # This could involve sending the event to a database, logging service, etc.
+    logging.info(f"User Event Logged: {event.dict()}")
+
+@traceable(name="API Chat Endpoint")
+@app.post("/chat")
+async def chat_endpoint(request: Request):
+    """
+    Handle chat requests and forward them to the core agent.
+
+    Args:
+        request (Request): The incoming request object.
+
+    Returns:
+        Response: The response from the core agent.
+    """
+    request_body = await request.json()
+
+    # Create and log the IncomingUserEvent
+    user_event = IncomingUserEvent(
+        user_id=request_body.get('user_id', 'Unknown User'),
+        user_name=request_body.get('user_name', 'Unknown User'),
+        event_time=datetime.now(timezone.utc),
+        capability_invoked="TARS",
+        user_agent=request_body.get('user_agent', 'API'),
+        response_satisfaction="none"
+    )
+    log_user_event(user_event)
+
+    # Prepare input for run_core_agent
+    user_input = {
+        'user_name': user_event.user_name,
+        'message': request_body.get('message', '')
+    }
+    # Add any additional fields that might be present in the request
+    user_input.update({k: v for k, v in request_body.items() if k not in user_input})
+
+    # Get the generator from run_core_agent
+    agent_response_generator = run_core_agent(user_id=user_event.user_id, user_message=str(user_input))
+
+    # Collect all responses from the generator
+    agent_response_text = ""
+    for response_part in agent_response_generator:
+        agent_response_text += response_part
+
+    return {"response": agent_response_text}
 
 async def verify_github_token(request: Request, x_github_token: str = Header(None)):
     """
@@ -67,8 +124,8 @@ async def verify_github_token(request: Request, x_github_token: str = Header(Non
 
     return x_github_token
 
-@traceable(name="API Chat Endpoint")
-@app.post("/chat")
+@traceable(name="API GitHub Chat Endpoint")
+@app.post("/chat_github")
 async def chat_endpoint(request: Request, github_token: str = Depends(verify_github_token)):
     """
     Handle chat requests and forward them to GitHub Copilot.

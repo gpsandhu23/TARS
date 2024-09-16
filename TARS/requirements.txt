@@ -17,3 +17,5 @@ langchain-openai
 pytest-asyncio
 langchain-google-genai
 langchain-community
+langgraph
+uvicorn

@@ -35,12 +35,12 @@ class AgentManager:
 
     def load_all_tools(self):
         custom_tools = [get_word_length, handle_all_unread_gmail, read_image_tool, fetch_dms_last_x_hours, fetch_calendar_events_for_x_days, fetch_emails_by_sender_name]
-        request_tools = load_tools(["requests_all"])
+        # request_tools = load_tools(["requests_all"])
         weather_tools = load_tools(["openweathermap-api"])
         finance_tools = [YahooFinanceNewsTool()]
         slack_tools = SlackToolkit().get_tools()
         youtube_tools = [YouTubeSearchTool()]
-        return custom_tools + request_tools + weather_tools + finance_tools + slack_tools + youtube_tools
+        return custom_tools + weather_tools + finance_tools + slack_tools + youtube_tools
 
     def define_prompt(self):
         return ChatPromptTemplate.from_messages([

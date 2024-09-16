@@ -1,11 +1,15 @@
 from typing import Dict, Any, Tuple, Optional
-from graphs.agent import AgentManager
+# from graphs.agent import AgentManager
 from config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from langsmith import traceable
-from slack_sdk.web import SlackResponse
+from graphs.core_agent import run_core_agent
+from metrics.event_instrumentation import IncomingUserEvent
+from datetime import datetime, timezone
+
+
 
 class SlackBot:
     """
@@ -21,7 +25,7 @@ class SlackBot:
         """
         self.setup_logging()
         self.chat_history: list = []
-        self.agent_manager: AgentManager = AgentManager()
+        # self.agent_manager: AgentManager = AgentManager()
         self.initialize_slack_app()
 
     def setup_logging(self) -> None:
@@ -114,6 +118,19 @@ class SlackBot:
         user_id, channel_id = event.get('user'), event.get('channel')
         if self.is_direct_message(event):
             response = self.handle_direct_message(event, client, user_id, channel_id)
+
+            # Create and log the IncomingUserEvent
+            # Create and log the IncomingUserEvent
+            user_event = IncomingUserEvent(
+                user_id=user_id,
+                user_name=self.fetch_user_info(client, user_id)[1],  # Using the real name
+                event_time=datetime.now(timezone.utc),
+                capability_invoked="TARS",
+                user_agent="Slack",
+                response_satisfaction="none"
+            )
+            self.log_user_event(user_event)
+            
             return response
 
     def is_direct_message(self, event: Dict[str, Any]) -> bool:
@@ -142,12 +159,47 @@ class SlackBot:
             The agent's response text.
         """
         response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
-        ts = response['ts']
+        ts = response.data['ts']
         user_info, user_real_name = self.fetch_user_info(client, user_id)
         agent_input = self.prepare_agent_input(event, user_real_name)
-        agent_response_text = self.agent_manager.process_user_task(str(agent_input), self.chat_history)
+
+        # Get the generator from run_core_agent
+        agent_response_generator = run_core_agent(user_id=user_id, user_message=str(agent_input))
+
+        # Collect all responses from the generator
+        agent_response_text = ""
+        for response_part in agent_response_generator:
+            agent_response_text += response_part
+            # Optionally, you can update the message in real-time as parts come in
+            self.send_response(client, channel_id, ts, agent_response_text)
+
+        # Send the final complete response
         self.send_response(client, channel_id, ts, agent_response_text)
         return agent_response_text
+    
+    def log_user_event(self, event: IncomingUserEvent) -> None:
+        """
+        Log the user event for metrics and analysis.
+
+        Args:
+            event: The IncomingUserEvent to be logged.
+        """
+        # Here you would implement the actual logging logic
+        # This could involve sending the event to a database, logging service, etc.
+        logging.info(f"User Event Logged: {event.dict()}")
+        print(f"User Event Logged: {event.dict()}")
+
+    def update_user_event_satisfaction(self, user_id: str, satisfaction: str) -> None:
+        """
+        Update the satisfaction of the most recent user event.
+
+        Args:
+            user_id: The ID of the user.
+            satisfaction: The satisfaction level ("thumbs_up" or "thumbs_down").
+        """
+        # Implement logic to update the satisfaction of the most recent event
+        # This could involve updating a database record, for example
+        pass
 
     def send_response(self, client: Any, channel_id: str, ts: str, text: str) -> None:
         """
