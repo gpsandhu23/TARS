@@ -1,29 +1,27 @@
-from typing import TypedDict, Literal, List, Any, Generator
+from typing import Generator
 
-from langgraph.graph import StateGraph, END
-from graphs.utils.nodes import call_model, should_continue, tool_node
+from config.config import graph_config
+from graphs.utils.nodes import call_model, load_memory, should_continue, tool_node
 from graphs.utils.state import AgentState
-from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
 memory = MemorySaver()
 
-
-# Define the config
-class GraphConfig(TypedDict):
-    model_name: Literal["anthropic", "openai"]
-
-
 # Define a new graph
-workflow = StateGraph(AgentState, config_schema=GraphConfig)
+workflow = StateGraph(AgentState, config_schema=graph_config)
 
-# Define the two nodes we will cycle between
+# Define the nodes
+workflow.add_node("load_memory", load_memory)
 workflow.add_node("agent", call_model)
 workflow.add_node("action", tool_node)
 
-# Set the entrypoint as `agent`
-# This means that this node is the first one called
-workflow.set_entry_point("agent")
+# Set the entrypoint as 'load_memory'
+workflow.set_entry_point("load_memory")
+
+# Add a edge from 'load_memory' to 'agent'
+workflow.add_edge("load_memory", "agent")
+
 
 # We now add a conditional edge
 workflow.add_conditional_edges(
@@ -55,6 +53,7 @@ workflow.add_edge("action", "agent")
 # meaning you can use it as you would any other runnable
 graph = workflow.compile(checkpointer=memory)
 
+
 def run_core_agent(user_message: str, user_id: str) -> Generator[str, None, None]:
     """
     Run the core agent with the given user message and chat history.
@@ -72,7 +71,11 @@ def run_core_agent(user_message: str, user_id: str) -> Generator[str, None, None
         print(f"event['messages'][-1]: {event['messages'][-1]}")
         print(f"type(event['messages'][-1]): {type(event['messages'][-1])}")
         print(f"event['messages'][-1].content: {event['messages'][-1].content}")
-        print(f"type(event['messages'][-1].content): {type(event['messages'][-1].content)}")
+        print(
+            f"type(event['messages'][-1].content): {type(event['messages'][-1].content)}"
+        )
         print(f"event['messages'][-1].content: {event['messages'][-1].content}")
-        print(f"type(event['messages'][-1].content): {type(event['messages'][-1].content)}")
+        print(
+            f"type(event['messages'][-1].content): {type(event['messages'][-1].content)}"
+        )
         yield event["messages"][-1].content

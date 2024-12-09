@@ -1,32 +1,32 @@
-from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_community.tools import YouTubeSearchTool
+import asyncio
+from typing import Annotated, Type
 
-
-# Add custom langchain tool to multiply two numbers
 from langchain.tools import BaseTool
+from langchain_community.tools import YouTubeSearchTool
+from langchain_community.tools.tavily_search import TavilySearchResults
 from pydantic import BaseModel, Field
-from typing import Type
 
 
 class MultiplyInput(BaseModel):
-    a: float = Field(..., description="The first number to multiply")
-    b: float = Field(..., description="The second number to multiply")
+    a: Annotated[float, Field(description="The first number to multiply")]
+    b: Annotated[float, Field(description="The second number to multiply")]
 
 
 class MultiplyTool(BaseTool):
-    name: str = Field(default="multiply")
-    description: str = Field(default="Multiply two numbers together")
-    args_schema: Type[BaseModel] = Field(default=MultiplyInput)
+    name: str = "multiply"
+    description: str = "Multiply two numbers together"
+    args_schema: Type[BaseModel] = MultiplyInput
 
     def _run(self, a: float, b: float) -> float:
+        """Synchronously multiply two numbers."""
         return a * b
 
-    def _arun(self, a: float, b: float) -> float:
-        return self._run(a, b)
+    async def _arun(self, a: float, b: float) -> float:
+        """Asynchronously multiply two numbers."""
+        return await asyncio.to_thread(self._run, a, b)
 
 
 multiply_tool = MultiplyTool()
 
 
-
-tools = [TavilySearchResults(max_results=1), multiply_tool, YouTubeSearchTool(max_results=3)]
+tools = [TavilySearchResults(max_results=1), YouTubeSearchTool(max_results=3)]

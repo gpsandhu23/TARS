@@ -1,18 +1,19 @@
-import json
-import sys
-import os
-import requests
 import base64
-import re
-import time
+import json
 import logging
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+import os
+import re
+import sys
+import time
+
+import requests
 from dotenv import load_dotenv
 from langchain.agents import tool
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from openai import OpenAI
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,7 @@ sys.path.insert(0, parent_dir)
 # from retrievers.gmail import authenticate_gmail_api, authenticate_calendar_api
 # from retrievers.gmail import fetch_unread_emails, mark_email_as_read, get_mime_message, get_email_content, get_upcoming_events
 
+
 # Custom tool definition
 @tool
 def get_word_length(word: str) -> int:
@@ -41,6 +43,7 @@ def get_word_length(word: str) -> int:
         int: The length of the word.
     """
     return len(word)
+
 
 # Schema for handle_message
 handle_message_schema = [
@@ -60,12 +63,12 @@ handle_message_schema = [
                 "urgency": {
                     "type": "string",
                     "description": "What is the level of urgency of taking action based on this message.",
-                    "enum": ["high", "medium", "low", "unknown"]
+                    "enum": ["high", "medium", "low", "unknown"],
                 },
                 "importance": {
                     "type": "string",
                     "description": "What is the level of importance for this message.",
-                    "enum": ["high", "medium", "low", "unknown"]
+                    "enum": ["high", "medium", "low", "unknown"],
                 },
                 "action": {
                     "type": "string",
@@ -76,10 +79,18 @@ handle_message_schema = [
                     "description": "What are the step by step instructions to perform the recommended action, if any",
                 },
             },
-            "required": ["summary", "action_needed", "urgency", "importance", "action", "action_instructions"],
-        }
+            "required": [
+                "summary",
+                "action_needed",
+                "urgency",
+                "importance",
+                "action",
+                "action_instructions",
+            ],
+        },
     }
 ]
+
 
 # AI Gmail Handler function
 def ai_gmail_handler(classifier_input):
@@ -94,14 +105,16 @@ def ai_gmail_handler(classifier_input):
     """
     try:
         prompt = ChatPromptTemplate.from_messages([("human", "{input}")])
-        model = ChatOpenAI(model="gpt-4-1106-preview", temperature=0).bind(functions=handle_message_schema)
+        model = ChatOpenAI(model="gpt-4-1106-preview", temperature=0).bind(
+            functions=handle_message_schema
+        )
         runnable = prompt | model
         message_action = runnable.invoke({"input": classifier_input})
         content = message_action.content
-        function_call = message_action.additional_kwargs.get('function_call')
+        function_call = message_action.additional_kwargs.get("function_call")
 
         if function_call is not None:
-            content = function_call.get('arguments', content)
+            content = function_call.get("arguments", content)
 
         # Check if content is a string and can be parsed as JSON
         if isinstance(content, str):
@@ -111,16 +124,24 @@ def ai_gmail_handler(classifier_input):
                 # If content is a string but not JSON, wrap it in a JSON-like structure
                 return {
                     "error": "Content is a string but not JSON",
-                    "raw_content": content
+                    "raw_content": content,
                 }
         else:
             # If not a string, log and return a default dictionary
-            logging.error("Content is not in the expected format. Returning default dictionary.")
-            return {"error": "Content not in expected format", "raw_content": str(content)}
+            logging.error(
+                "Content is not in the expected format. Returning default dictionary."
+            )
+            return {
+                "error": "Content not in expected format",
+                "raw_content": str(content),
+            }
 
     except Exception as e:
         logging.error(f"Error in ai_gmail_handler: {e}")
-        return {"error": "Exception occurred in ai_gmail_handler", "exception_message": str(e)}
+        return {
+            "error": "Exception occurred in ai_gmail_handler",
+            "exception_message": str(e),
+        }
 
 
 # Tool to handle all unread Gmails
@@ -130,7 +151,7 @@ def handle_all_unread_gmail() -> list:
     Processes all unread emails in the Gmail inbox and returns a list containing details of each email.
 
     Returns:
-        list: A list of dictionaries, each containing details of an unread email such as sender, subject, summary, 
+        list: A list of dictionaries, each containing details of an unread email such as sender, subject, summary,
               action needed, importance, urgency, action, and action instructions.
     """
     try:
@@ -139,40 +160,48 @@ def handle_all_unread_gmail() -> list:
         all_message_details = []
 
         for message in unread_messages:
-            msg_id = message['id']
-            received_date = message['received_date']
-            mime_msg = get_mime_message(service, 'me', msg_id)
+            msg_id = message["id"]
+            received_date = message["received_date"]
+            mime_msg = get_mime_message(service, "me", msg_id)
 
             headers = mime_msg.items()
-            sender = next(value for name, value in headers if name == 'From')
-            subject = next(value for name, value in headers if name == 'Subject')
+            sender = next(value for name, value in headers if name == "From")
+            subject = next(value for name, value in headers if name == "Subject")
             content = get_email_content(mime_msg)
 
-            classifier_input = "Sender: " + str(sender) + " Subject: " + str(subject) + " Email content: " + str(content)
+            classifier_input = (
+                "Sender: "
+                + str(sender)
+                + " Subject: "
+                + str(subject)
+                + " Email content: "
+                + str(content)
+            )
             ai_response = ai_gmail_handler(classifier_input)
             print(type(ai_response))
 
             email_details = {
-                'sender': sender,
-                'subject': subject,
-                'received_date': received_date,
-                'id': msg_id,
-                'summary': ai_response.get('summary', 'N/A'),
-                'action_needed': ai_response.get('action_needed', 'N/A'),
-                'importance': ai_response.get('importance', 'N/A'),
-                'urgency': ai_response.get('urgency', 'N/A'),
-                'action': ai_response.get('action', 'N/A'),
-                'action_instructions': ai_response.get('action_instructions', 'N/A')
+                "sender": sender,
+                "subject": subject,
+                "received_date": received_date,
+                "id": msg_id,
+                "summary": ai_response.get("summary", "N/A"),
+                "action_needed": ai_response.get("action_needed", "N/A"),
+                "importance": ai_response.get("importance", "N/A"),
+                "urgency": ai_response.get("urgency", "N/A"),
+                "action": ai_response.get("action", "N/A"),
+                "action_instructions": ai_response.get("action_instructions", "N/A"),
             }
 
             logging.info(email_details)
             all_message_details.append(email_details)
-            mark_email_as_read(service, 'me', msg_id)
+            mark_email_as_read(service, "me", msg_id)
 
         return all_message_details
     except Exception as e:
         logging.error(f"Error in handle_all_unread_gmail: {e}")
         return []
+
 
 @tool
 def fetch_emails_by_sender_name(sender_name: str) -> list[dict[str, str]]:
@@ -190,34 +219,44 @@ def fetch_emails_by_sender_name(sender_name: str) -> list[dict[str, str]]:
         service = authenticate_gmail_api()
 
         # Search for messages from the specified sender name
-        query = f'from:{sender_name}'
-        response = service.users().messages().list(userId='me', q=query).execute()
+        query = f"from:{sender_name}"
+        response = service.users().messages().list(userId="me", q=query).execute()
 
         emails = []
-        if 'messages' in response:
-            for message in response['messages']:
-                email_id = message['id']
+        if "messages" in response:
+            for message in response["messages"]:
+                email_id = message["id"]
 
                 # Fetch the full message details using the email ID
-                raw_message = service.users().messages().get(userId='me', id=email_id, format='raw').execute()
-                
+                raw_message = (
+                    service.users()
+                    .messages()
+                    .get(userId="me", id=email_id, format="raw")
+                    .execute()
+                )
+
                 # Convert raw_message to a MIME message
-                mime_msg = get_mime_message(service, 'me', email_id)
+                mime_msg = get_mime_message(service, "me", email_id)
 
                 # Extract headers for sender and subject
                 headers = mime_msg.items()
-                sender = next((value for name, value in headers if name == 'From'), 'No Sender')
-                subject = next((value for name, value in headers if name == 'Subject'), 'No Subject')
-                
+                sender = next(
+                    (value for name, value in headers if name == "From"), "No Sender"
+                )
+                subject = next(
+                    (value for name, value in headers if name == "Subject"),
+                    "No Subject",
+                )
+
                 # Get email content
                 content = get_email_content(mime_msg)
 
                 # Compile email details
                 email_details = {
-                    'id': email_id,
-                    'sender': sender,
-                    'subject': subject,
-                    'content': content
+                    "id": email_id,
+                    "sender": sender,
+                    "subject": subject,
+                    "content": content,
                 }
 
                 emails.append(email_details)
@@ -225,7 +264,7 @@ def fetch_emails_by_sender_name(sender_name: str) -> list[dict[str, str]]:
         return emails
 
     except Exception as e:
-        print(f'An error occurred: {e}')
+        print(f"An error occurred: {e}")
         return None
 
 
@@ -251,11 +290,13 @@ def read_image_tool(image_path: str, prompt: str) -> str:
             headers = {"Authorization": f"Bearer {slack_token}"}
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
-                return base64.b64encode(response.content).decode('utf-8')
+                return base64.b64encode(response.content).decode("utf-8")
             else:
-                raise Exception(f"Failed to download image from Slack. Status code: {response.status_code}")
+                raise Exception(
+                    f"Failed to download image from Slack. Status code: {response.status_code}"
+                )
 
-        slack_url_pattern = r'https?://files\.slack\.com/.*'
+        slack_url_pattern = r"https?://files\.slack\.com/.*"
         is_slack_url = re.match(slack_url_pattern, image_path) is not None
 
         if is_slack_url and slack_token:
@@ -281,6 +322,7 @@ def read_image_tool(image_path: str, prompt: str) -> str:
         logging.error(f"Error in read_image_tool: {e}")
         return "Error processing image"
 
+
 # Tool to fetch DMs from Slack
 @tool
 def fetch_dms_last_x_hours(hours: int) -> list:
@@ -291,7 +333,7 @@ def fetch_dms_last_x_hours(hours: int) -> list:
         hours (int): The number of hours in the past from which to retrieve direct messages.
 
     Returns:
-        list: A list of dictionaries, each containing details of a direct message, including sender's user ID, 
+        list: A list of dictionaries, each containing details of a direct message, including sender's user ID,
               timestamp, and text of the message. Returns None if an error occurs.
     """
     try:
@@ -300,21 +342,26 @@ def fetch_dms_last_x_hours(hours: int) -> list:
         hours_ago = time.time() - hours * 60 * 60
         dms_last_x_hours = []
 
-        conversations = client.conversations_list(types='im')
-        for conversation in conversations['channels']:
-            conversation_id = conversation['id']
-            history = client.conversations_history(channel=conversation_id, oldest=str(hours_ago))
-            for message in history['messages']:
-                dms_last_x_hours.append({
-                    "user": message.get('user', 'Unknown'),
-                    "timestamp": message.get('ts', 'Unknown Timestamp'),
-                    "text": message.get('text', 'No Text')
-                })
+        conversations = client.conversations_list(types="im")
+        for conversation in conversations["channels"]:
+            conversation_id = conversation["id"]
+            history = client.conversations_history(
+                channel=conversation_id, oldest=str(hours_ago)
+            )
+            for message in history["messages"]:
+                dms_last_x_hours.append(
+                    {
+                        "user": message.get("user", "Unknown"),
+                        "timestamp": message.get("ts", "Unknown Timestamp"),
+                        "text": message.get("text", "No Text"),
+                    }
+                )
 
         return dms_last_x_hours
     except SlackApiError as e:
         logging.error(f"Error fetching DMs: {e.response['error']}")
         return None
+
 
 @tool
 def fetch_calendar_events_for_x_days(days: int) -> list:

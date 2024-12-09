@@ -1,5 +1,5 @@
-# Use the official Python 3.10 image as a base image
-FROM python:3.10-slim
+# Use the official Python 3.13 image as a base image
+FROM python:3.13-slim
 
 # Set the working directory in the Docker container
 WORKDIR /app
@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the dir
 COPY TARS .
+
+# Expose the Streamlit port
+EXPOSE 8501
 
 # Command to run your application
 CMD ["python", "main.py"]

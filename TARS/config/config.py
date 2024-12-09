@@ -1,20 +1,13 @@
-from pydantic_settings import BaseSettings
-from typing import ClassVar
-import os
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 # Load secrets from .env
 load_dotenv()
 
-# Determine the environment and load the appropriate config file
-environment = os.getenv('ENVIRONMENT', 'local')  # Default to 'local' if not set
-config_file = f"config.{environment}"
-load_dotenv(config_file)
 
 class BaseConfig(BaseSettings):
     class Config:
-        env_file = config_file
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
 
 
 class SlackSettings(BaseConfig):
@@ -24,42 +17,41 @@ class SlackSettings(BaseConfig):
 
 
 class OpenAISettings(BaseConfig):
-    env_prefix: ClassVar[str] = "OPENAI_"
-    model: str = "gpt-4o"
-    api_key: str
-    temperature: float = 0.0
+    openai_model: str
+    openai_api_key: str
+    openai_temperature: float = 0.0
 
     class Config:
-        env_prefix = "OPENAI_"
         env_file = ".env"
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
 
 
 class AnthropicSettings(BaseConfig):
-    env_prefix: ClassVar[str] = "ANTHROPIC_"
-    model: str = "claude-3-opus-20240229"
-    api_key: str
-    temperature: float = 0.0
+    anthropic_model: str
+    anthropic_api_key: str
+    anthropic_temperature: float = 0.0
 
     class Config:
-        env_prefix = "ANTHROPIC_"
         env_file = ".env"
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
 
 
 class GoogleAISettings(BaseConfig):
-    model: str = "gemini-pro"
-    api_key: str
-    temperature: float = 0.0
+    google_ai_model: str
+    google_ai_api_key: str
+    google_ai_temperature: float = 0.0
 
     class Config:
-        env_prefix = "GOOGLE_"
         env_file = ".env"
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
 
 
-class LLMSettings(BaseConfig):
-    llm_type: str = "openai"  # 'openai', 'google', or 'anthropic'
+class GraphConfig(BaseConfig):
+    agent_model_name: str
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
 class GitHubOAuthSettings(BaseConfig):
@@ -69,13 +61,14 @@ class GitHubOAuthSettings(BaseConfig):
     class Config:
         env_prefix = "GITHUB_"
         env_file = ".env"
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
+
 
 # Initialize the chat models based on settings
 openai_settings = OpenAISettings()
 anthropic_settings = AnthropicSettings()
 google_ai_settings = GoogleAISettings()
-llm_settings = LLMSettings()
+graph_config = GraphConfig()
 
 # Initialize Slack settings
 slack_settings = SlackSettings()

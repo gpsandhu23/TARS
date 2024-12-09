@@ -12,7 +12,7 @@ def run_slack_bot():
     bot.start()
 
 def run_streamlit():
-    subprocess.run(["streamlit", "run", "surfaces/web/web.py"])
+    subprocess.run(["streamlit", "run", "surfaces/web/web.py", "--server.address", "0.0.0.0", "--server.port", "8501"])
 
 if __name__ == "__main__":
     # Start the FastAPI app

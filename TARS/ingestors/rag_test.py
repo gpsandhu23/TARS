@@ -1,5 +1,4 @@
 from langchain_community.document_loaders import WebBaseLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
 import json
 
@@ -14,8 +13,6 @@ docs.extend(loader.load())
 
 # print("doc source url:", docs[0].metadata["source"])
 
-import uuid
-from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI

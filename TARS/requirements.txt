@@ -19,3 +19,5 @@ langchain-google-genai
 langchain-community
 langgraph
 uvicorn
+pinecone
+ruff
