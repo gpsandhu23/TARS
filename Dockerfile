@@ -1,5 +1,5 @@
-# Use the official Python 3.13 image as a base image
-FROM python:3.13-slim
+# Use the official Python 3.12 image as a base image
+FROM python:3.12-slim
 
 # Set the working directory in the Docker container
 WORKDIR /app

@@ -2,6 +2,10 @@
 myenv/
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.DS_Store
+.cursorrules
+.pytest_cache
+
 *.py[cod]
 *$py.class
 *.pyc

@@ -1,7 +1,11 @@
 {
-    "dependencies": ["."],
-    "graphs": {
-      "core_agent": "graphs/core_agent.py:graph"
-    },
-    "env": "../.env"
-  }
+  "dockerfile_lines": [],
+  "graphs": {
+    "core_agent": "graphs/core_agent.py:graph"
+  },
+  "env": "../.env",
+  "python_version": "3.12",
+  "dependencies": [
+    "."
+  ]
+}
