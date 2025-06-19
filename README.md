@@ -23,14 +23,36 @@ TARS consists of the following main components:
 
 1. Clone the repository: `git clone https://github.com/yourusername/TARS.git`
 
-2. Install the required dependencies: `pip install -r requirements.txt`
+2. Install uv (modern Python package manager):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   source $HOME/.local/bin/env
+   ```
 
-3. Set up the necessary API credentials:
+3. Install the project dependencies using uv:
+   ```bash
+   uv sync
+   ```
+
+4. Set up the necessary API credentials:
    - Gmail API: Follow the instructions in `retrievers/gmail.py` to set up Gmail API access.
    - Slack API: Set the `SLACK_BOT_TOKEN` and `SLACK_USER_TOKEN` environment variables with your Slack app credentials.
    - OpenAI API: Set the `OPENAI_API_KEY` environment variable with your OpenAI API key.
 
-4. Run the web interface: `streamlit run surfaces/web/web.py`
+5. Run the web interface: 
+   ```bash
+   uv run streamlit run surfaces/web/web.py
+   ```
+
+## Docker Setup
+
+You can also run TARS using Docker:
+
+```bash
+docker-compose up
+```
+
+This will build the Docker image using uv for dependency management and start the application.
 
 ## Usage Examples
 
