@@ -8,7 +8,7 @@ services:
       - "8501:8501"
     env_file:
       - .env
-    stdin_open: true  # Keep stdin open
-    tty: true         # Allocate a pseudo-TTY
+    stdin_open: true # Keep stdin open
+    tty: true # Allocate a pseudo-TTY
     volumes:
-      - ./TARS:/app
+      - ./TARS:/app/TARS

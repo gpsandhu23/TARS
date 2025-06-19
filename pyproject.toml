@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tars"
+version = "0.1.0"
+description = "TARS - AI Assistant"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+    "langchain",
+    "openai",
+    "python-dotenv",
+    "slack_bolt",
+    "pyowm",
+    "yfinance",
+    "youtube_search",
+    "pydantic-settings",
+    "pytest",
+    "fastapi",
+    "streamlit",
+    "langchain-anthropic",
+    "langchain-openai",
+    "pytest-asyncio",
+    "langchain-google-genai",
+    "langchain-community",
+    "langgraph",
+    "uvicorn",
+    "pinecone",
+    "ruff",
+    "langchain-chroma",
+    "chromadb",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/gpsandhu23/TARS"
+"Bug Tracker" = "https://github.com/gpsandhu23/TARS/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["TARS"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["TARS/tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
