@@ -1,5 +1,17 @@
 .env*
 myenv/
+.env
+.venv/
+.vscode/
+.ruff_cache/
+.pytest_cache/
+.DS_Store
+.cursorrules
+.pdm-build/
+.pytest_cache/
+.ruff_cache/
+.pdm-build/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .DS_Store
