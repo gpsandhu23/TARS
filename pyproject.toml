@@ -36,7 +36,7 @@ dependencies = [
     "ruff",
     "langchain-chroma",
     "chromadb",
-    "protobuf<4.0.0",
+    "protobuf<7.0.0",
     "setuptools>=80.9.0",
 ]
 
