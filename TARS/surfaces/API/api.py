@@ -43,7 +43,7 @@ def log_user_event(event: IncomingUserEvent):
     """
     # Here you would implement the actual logging logic
     # This could involve sending the event to a database, logging service, etc.
-    logger.info(f"User Event Logged: {event.dict()}")
+    logger.info(f"User Event Logged: {event.model_dump()}")
 
 
 @traceable(name="API Chat Endpoint")

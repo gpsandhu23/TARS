@@ -55,7 +55,7 @@ class TestAPI(unittest.TestCase):
         
         response = self.client.get("/auth/github/callback", params={"code": "mock_code"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"status": "success", "user_info": {"user": "mock_user"}})
+        self.assertEqual(response.json(), {"status": "success", "user_info": {"user": "mock_user"}, "user_token": "mock_access_token"})
 
     def test_github_oauth_callback_missing_code(self):
         response = self.client.get("/auth/github/callback")

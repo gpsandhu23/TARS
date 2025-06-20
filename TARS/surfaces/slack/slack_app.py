@@ -101,6 +101,7 @@ class SlackBot:
             for file_info in event['files']:
                 if file_info['mimetype'].startswith('image/'):
                     images['image_url'] = file_info['url_private']
+                    break  # Return the first image found
         return images
 
     @traceable(name="Slack Message")
@@ -185,8 +186,8 @@ class SlackBot:
         """
         # Here you would implement the actual logging logic
         # This could involve sending the event to a database, logging service, etc.
-        logging.info(f"User Event Logged: {event.dict()}")
-        print(f"User Event Logged: {event.dict()}")
+        logging.info(f"User Event Logged: {event.model_dump()}")
+        print(f"User Event Logged: {event.model_dump()}")
 
     def update_user_event_satisfaction(self, user_id: str, satisfaction: str) -> None:
         """
