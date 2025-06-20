@@ -1,67 +1,56 @@
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 # Load secrets from .env
 load_dotenv()
 
 
 class BaseConfig(BaseSettings):
-    class Config:
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
 
 
 class SlackSettings(BaseConfig):
-    slack_bot_token: str
-    slack_signing_secret: str
-    slack_app_token: str
+    slack_bot_token: Optional[str] = None
+    slack_signing_secret: Optional[str] = None
+    slack_app_token: Optional[str] = None
 
 
 class OpenAISettings(BaseConfig):
-    openai_model: str
-    openai_api_key: str
+    openai_model: Optional[str] = None
+    openai_api_key: Optional[str] = None
     openai_temperature: float = 0.0
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 class AnthropicSettings(BaseConfig):
-    anthropic_model: str
-    anthropic_api_key: str
+    anthropic_model: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
     anthropic_temperature: float = 0.0
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 class GoogleAISettings(BaseConfig):
-    google_ai_model: str
-    google_ai_api_key: str
+    google_ai_model: Optional[str] = None
+    google_ai_api_key: Optional[str] = None
     google_ai_temperature: float = 0.0
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 class GraphConfig(BaseConfig):
-    agent_model_name: str
+    agent_model_name: Optional[str] = "anthropic"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 class GitHubOAuthSettings(BaseConfig):
-    client_id: str
-    client_secret: str
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
 
-    class Config:
-        env_prefix = "GITHUB_"
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_prefix="GITHUB_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 # Initialize the chat models based on settings

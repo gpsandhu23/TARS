@@ -29,11 +29,26 @@ dependencies = [
     "langchain-google-genai",
     "langchain-community",
     "langgraph",
+    "langgraph-cli",
+    "langgraph-api",
     "uvicorn",
     "pinecone",
     "ruff",
     "langchain-chroma",
     "chromadb",
+    "protobuf<4.0.0",
+    "setuptools>=80.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+    "flake8",
 ]
 
 [project.urls]
