@@ -5,8 +5,8 @@ import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from langsmith import traceable
-from graphs.core_agent import run_core_agent
-from metrics.event_instrumentation import IncomingUserEvent
+from TARS.graphs.core_agent import run_core_agent
+from TARS.metrics.event_instrumentation import IncomingUserEvent
 from datetime import datetime, timezone
 
 

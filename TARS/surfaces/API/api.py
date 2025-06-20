@@ -6,9 +6,9 @@ import requests
 from TARS.config.config import github_oauth_settings
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from graphs.core_agent import run_core_agent
+from TARS.graphs.core_agent import run_core_agent
 from langsmith import traceable
-from metrics.event_instrumentation import IncomingUserEvent
+from TARS.metrics.event_instrumentation import IncomingUserEvent
 from pydantic import BaseModel
 from starlette.responses import Response
 
