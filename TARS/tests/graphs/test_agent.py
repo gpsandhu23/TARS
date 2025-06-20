@@ -8,8 +8,7 @@ class TestCoreAgent(unittest.TestCase):
         pass
 
     @patch('TARS.graphs.core_agent.graph')
-    @patch('TARS.graphs.core_agent.memory_manager')
-    def test_run_core_agent_valid_input(self, mock_memory_manager, mock_graph):
+    def test_run_core_agent_valid_input(self, mock_graph):
         # Mock the graph stream to return a simple response
         mock_events = [
             {"messages": [MagicMock(content="Test response")]}
@@ -17,11 +16,11 @@ class TestCoreAgent(unittest.TestCase):
         mock_graph.stream.return_value = mock_events
         
         # Test with valid input
-        user_message = "What's the weather like today?"
-        user_id = "test_user_123"
+        user_name = "test_user_123"
+        message = "What's the weather like today?"
         
         # Get the generator
-        response_generator = run_core_agent(user_id, user_message)
+        response_generator = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
@@ -29,26 +28,23 @@ class TestCoreAgent(unittest.TestCase):
         # Verify the response
         self.assertTrue(len(responses) > 0)
         self.assertIsInstance(responses[0], str)
-        
-        # Verify memory manager was called
-        mock_memory_manager.add_interaction.assert_called_once()
+        self.assertEqual(responses[0], "Test response")
 
     def test_run_core_agent_invalid_input(self):
         # Test with None input
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             list(run_core_agent(None, "test_user"))
 
     @patch('TARS.graphs.core_agent.graph')
-    @patch('TARS.graphs.core_agent.memory_manager')
-    def test_run_core_agent_empty_response(self, mock_memory_manager, mock_graph):
+    def test_run_core_agent_empty_response(self, mock_graph):
         # Mock the graph stream to return empty events
         mock_graph.stream.return_value = []
         
-        user_message = "Test message"
-        user_id = "test_user_123"
+        user_name = "test_user_123"
+        message = "Test message"
         
         # Get the generator
-        response_generator = run_core_agent(user_message, user_id)
+        response_generator = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
@@ -57,16 +53,15 @@ class TestCoreAgent(unittest.TestCase):
         self.assertEqual(len(responses), 0)
 
     @patch('TARS.graphs.core_agent.graph')
-    @patch('TARS.graphs.core_agent.memory_manager')
-    def test_run_core_agent_exception_handling(self, mock_memory_manager, mock_graph):
+    def test_run_core_agent_exception_handling(self, mock_graph):
         # Mock the graph to raise an exception
         mock_graph.stream.side_effect = Exception("Test error")
         
-        user_message = "Test message"
-        user_id = "test_user_123"
+        user_name = "test_user_123"
+        message = "Test message"
         
         # Get the generator
-        response_generator = run_core_agent(user_message, user_id)
+        response_generator = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
