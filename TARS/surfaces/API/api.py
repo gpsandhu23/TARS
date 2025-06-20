@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import aiohttp
 import requests
-from config.config import github_oauth_settings
+from TARS.config.config import github_oauth_settings
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from graphs.core_agent import run_core_agent
@@ -15,8 +15,12 @@ from starlette.responses import Response
 # Load environment variables from .env file
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Setup logging with more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -39,7 +43,7 @@ def log_user_event(event: IncomingUserEvent):
     """
     # Here you would implement the actual logging logic
     # This could involve sending the event to a database, logging service, etc.
-    logging.info(f"User Event Logged: {event.dict()}")
+    logger.info(f"User Event Logged: {event.dict()}")
 
 
 @traceable(name="API Chat Endpoint")
@@ -54,38 +58,64 @@ async def chat_endpoint(request: Request):
     Returns:
         Response: The response from the core agent.
     """
-    request_body = await request.json()
+    logger.info("=== API CHAT ENDPOINT START ===")
+    
+    try:
+        request_body = await request.json()
+        logger.info(f"Received request body: {request_body}")
 
-    # Create and log the IncomingUserEvent
-    user_event = IncomingUserEvent(
-        user_id=request_body.get("user_id", "Unknown User"),
-        user_name=request_body.get("user_name", "Unknown User"),
-        event_time=datetime.now(timezone.utc),
-        capability_invoked="TARS",
-        user_agent=request_body.get("user_agent", "API"),
-        response_satisfaction="none",
-    )
-    log_user_event(user_event)
+        # Create and log the IncomingUserEvent
+        user_event = IncomingUserEvent(
+            user_id=request_body.get("user_id", "Unknown User"),
+            user_name=request_body.get("user_name", "Unknown User"),
+            event_time=datetime.now(timezone.utc),
+            capability_invoked="TARS",
+            user_agent=request_body.get("user_agent", "API"),
+            response_satisfaction="none",
+        )
+        logger.info(f"Created user event: {user_event}")
+        log_user_event(user_event)
 
-    # Prepare input for run_core_agent
-    user_input = {
-        "user_name": user_event.user_name,
-        "message": request_body.get("message", ""),
-    }
-    # Add any additional fields that might be present in the request
-    user_input.update({k: v for k, v in request_body.items() if k not in user_input})
+        # Prepare input for run_core_agent
+        user_input = {
+            "user_name": user_event.user_name,
+            "message": request_body.get("message", ""),
+        }
+        # Add any additional fields that might be present in the request
+        user_input.update({k: v for k, v in request_body.items() if k not in user_input})
+        
+        logger.info(f"Prepared user input for core agent: {user_input}")
+        logger.info(f"Calling run_core_agent with user_id: {user_event.user_id}, user_message: {request_body.get('message', '')}")
 
-    # Get the generator from run_core_agent
-    agent_response_generator = run_core_agent(
-        user_id=user_event.user_id, user_message=str(user_input)
-    )
+        # Get the generator from run_core_agent
+        agent_response_generator = run_core_agent(
+            user_id=user_event.user_id, user_message=request_body.get("message", "")
+        )
+        logger.info("Successfully got response generator from run_core_agent")
 
-    # Collect all responses from the generator
-    agent_response_text = ""
-    for response_part in agent_response_generator:
-        agent_response_text += response_part
+        # Collect all responses from the generator
+        agent_response_text = ""
+        response_count = 0
+        logger.info("Starting to iterate through response generator...")
+        
+        for response_part in agent_response_generator:
+            response_count += 1
+            logger.info(f"Received response part #{response_count}: '{response_part}'")
+            agent_response_text += response_part
 
-    return {"response": agent_response_text}
+        logger.info(f"Completed response collection. Total parts: {response_count}, Final response: '{agent_response_text}'")
+        
+        if not agent_response_text.strip():
+            logger.warning("Empty response received from core agent!")
+            return {"response": "I apologize, but I didn't receive a proper response. Please try again."}
+        
+        logger.info("=== API CHAT ENDPOINT SUCCESS ===")
+        return {"response": agent_response_text}
+        
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
+        logger.info("=== API CHAT ENDPOINT ERROR ===")
+        return {"response": f"An error occurred: {str(e)}"}
 
 
 async def verify_github_token(request: Request, x_github_token: str = Header(None)):

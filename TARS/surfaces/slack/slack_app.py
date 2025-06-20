@@ -1,6 +1,6 @@
 from typing import Dict, Any, Tuple, Optional
 # from graphs.agent import AgentManager
-from config.config import slack_settings
+from TARS.config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler

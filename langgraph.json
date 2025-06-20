@@ -1,7 +1,7 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "core_agent": "graphs/core_agent.py:graph"
+    "core_agent": "TARS/graphs/core_agent.py:graph"
   },
   "env": "../.env",
   "python_version": "3.12",
