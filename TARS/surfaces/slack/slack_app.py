@@ -164,7 +164,7 @@ class SlackBot:
         agent_input = self.prepare_agent_input(event, user_real_name)
 
         # Get the generator from run_core_agent
-        agent_response_generator = run_core_agent(user_name=user_real_name, message=str(agent_input))
+        agent_response_generator = run_core_agent(user_name=user_real_name, message=agent_input['message'])
 
         # Collect all responses from the generator
         agent_response_text = ""
