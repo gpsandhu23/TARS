@@ -45,7 +45,7 @@ class TestAPI(unittest.TestCase):
     def test_test_endpoint(self):
         response = self.client.get("/test")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"message": "API is working!"})
+        self.assertEqual(response.json(), {"message": "Hola! Welcome to our API!"})
 
     @patch('TARS.surfaces.API.api.exchange_code_for_access_token')
     @patch('TARS.surfaces.API.api.validate_access_token_and_retrieve_user_info')

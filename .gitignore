@@ -12,6 +12,9 @@ myenv/
 .ruff_cache/
 .pdm-build/
 
+# LangGraph runtime artifacts
+.langgraph_api/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .DS_Store

@@ -5,8 +5,6 @@ import logging
 from TARS.config.config import GraphConfig
 from TARS.graphs.utils.nodes import (
     call_model,
-    load_memory,
-    memory_manager,
     should_continue,
     tool_node,
 )
@@ -47,39 +45,37 @@ graph = workflow.compile()
 logger.info("Core agent graph compiled successfully")
 
 
-def run_core_agent(user_message: str, user_id: str) -> Generator[str, None, None]:
+def run_core_agent(user_name: str, message: str) -> Generator[str, None, None]:
     """
-    Run the core agent with the given user message and manage memory.
+    Run the core agent with the given user name and message.
 
     Args:
-        user_message (str): The message from the user
-        user_id (str): Unique identifier for the user
+        user_name (str): The name of the user
+        message (str): The message from the user
 
     Yields:
         str: Each piece of the response as it becomes available
     """
     logger.info(f"=== CORE AGENT START ===")
-    logger.info(f"Input - user_id: {user_id}, user_message: {user_message}")
+    logger.info(f"Input - user_name: {user_name}, message: {message}")
+
+    if user_name is None:
+        logger.error("Invalid input: user_name is None")
+        raise ValueError("Invalid input: user_name is None")
+    
+    if message is None:
+        logger.error("Invalid input: message is None")
+        raise ValueError("Invalid input: message is None")
     
     try:
-        # Store user message in memory
-        logger.info("Adding user message to memory...")
-        memory_manager.add_interaction(
-            user_id,
-            {
-                "role": "user",
-                "content": user_message,
-                "timestamp": datetime.now().isoformat(),
-            },
-        )
-        logger.info("Successfully added user message to memory")
 
-        config: RunnableConfig = {"configurable": {"thread_id": user_id}}
+        logger.info("Inside run_core_agent try block")
+        config: RunnableConfig = {"configurable": {"thread_id": user_name}}
         logger.info(f"Created config: {config}")
         
         logger.info("Starting graph stream...")
         events = graph.stream(
-            {"messages": [("user", user_message)]}, config=config, stream_mode="values"
+            {"messages": [("user", message)]}, config=config, stream_mode="values"
         )
         logger.info("Successfully started graph stream")
 

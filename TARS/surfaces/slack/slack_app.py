@@ -120,7 +120,6 @@ class SlackBot:
             response = self.handle_direct_message(event, client, user_id, channel_id)
 
             # Create and log the IncomingUserEvent
-            # Create and log the IncomingUserEvent
             user_event = IncomingUserEvent(
                 user_id=user_id,
                 user_name=self.fetch_user_info(client, user_id)[1],  # Using the real name
@@ -158,13 +157,13 @@ class SlackBot:
         Returns:
             The agent's response text.
         """
-        response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
+        response = client.chat_postMessage(channel=channel_id, text="Working on it...")
         ts = response.data['ts']
         user_info, user_real_name = self.fetch_user_info(client, user_id)
         agent_input = self.prepare_agent_input(event, user_real_name)
 
         # Get the generator from run_core_agent
-        agent_response_generator = run_core_agent(user_id=user_id, user_message=str(agent_input))
+        agent_response_generator = run_core_agent(user_name=user_real_name, message=str(agent_input))
 
         # Collect all responses from the generator
         agent_response_text = ""

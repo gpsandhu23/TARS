@@ -21,7 +21,7 @@ class TestCoreAgent(unittest.TestCase):
         user_id = "test_user_123"
         
         # Get the generator
-        response_generator = run_core_agent(user_message, user_id)
+        response_generator = run_core_agent(user_id, user_message)
         
         # Collect all responses
         responses = list(response_generator)

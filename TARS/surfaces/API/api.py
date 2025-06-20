@@ -82,14 +82,14 @@ async def chat_endpoint(request: Request):
             "message": request_body.get("message", ""),
         }
         # Add any additional fields that might be present in the request
-        user_input.update({k: v for k, v in request_body.items() if k not in user_input})
+        # user_input.update({k: v for k, v in request_body.items() if k not in user_input})
         
         logger.info(f"Prepared user input for core agent: {user_input}")
-        logger.info(f"Calling run_core_agent with user_id: {user_event.user_id}, user_message: {request_body.get('message', '')}")
 
         # Get the generator from run_core_agent
         agent_response_generator = run_core_agent(
-            user_id=user_event.user_id, user_message=request_body.get("message", "")
+            user_name=user_input["user_name"],
+            message=user_input["message"]
         )
         logger.info("Successfully got response generator from run_core_agent")
 
