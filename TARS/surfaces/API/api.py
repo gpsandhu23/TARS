@@ -48,12 +48,12 @@ def log_user_event(event: IncomingUserEvent):
 
 @traceable(name="API Chat Endpoint")
 @app.post("/chat")
-async def chat_endpoint(request: Request):
+async def chat_endpoint(request: ChatRequest):
     """
     Handle chat requests and forward them to the core agent.
 
     Args:
-        request (Request): The incoming request object.
+        request (ChatRequest): The validated chat request object.
 
     Returns:
         Response: The response from the core agent.
@@ -61,16 +61,15 @@ async def chat_endpoint(request: Request):
     logger.info("=== API CHAT ENDPOINT START ===")
     
     try:
-        request_body = await request.json()
-        logger.info(f"Received request body: {request_body}")
+        logger.info(f"Received request: {request}")
 
         # Create and log the IncomingUserEvent
         user_event = IncomingUserEvent(
-            user_id=request_body.get("user_id", "Unknown User"),
-            user_name=request_body.get("user_name", "Unknown User"),
+            user_id=request.user_name,  # Using user_name as user_id
+            user_name=request.user_name,
             event_time=datetime.now(timezone.utc),
             capability_invoked="TARS",
-            user_agent=request_body.get("user_agent", "API"),
+            user_agent="API",
             response_satisfaction="none",
         )
         logger.info(f"Created user event: {user_event}")
@@ -79,10 +78,8 @@ async def chat_endpoint(request: Request):
         # Prepare input for run_core_agent
         user_input = {
             "user_name": user_event.user_name,
-            "message": request_body.get("message", ""),
+            "message": request.message,
         }
-        # Add any additional fields that might be present in the request
-        # user_input.update({k: v for k, v in request_body.items() if k not in user_input})
         
         logger.info(f"Prepared user input for core agent: {user_input}")
 
