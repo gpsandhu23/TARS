@@ -5,8 +5,8 @@ import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from langsmith import traceable
-from graphs.core_agent import run_core_agent
-from metrics.event_instrumentation import IncomingUserEvent
+from TARS.graphs.core_agent import run_core_agent
+from TARS.metrics.event_instrumentation import IncomingUserEvent
 from datetime import datetime, timezone
 
 
@@ -101,6 +101,7 @@ class SlackBot:
             for file_info in event['files']:
                 if file_info['mimetype'].startswith('image/'):
                     images['image_url'] = file_info['url_private']
+                    break  # Return the first image found
         return images
 
     @traceable(name="Slack Message")
@@ -119,7 +120,6 @@ class SlackBot:
         if self.is_direct_message(event):
             response = self.handle_direct_message(event, client, user_id, channel_id)
 
-            # Create and log the IncomingUserEvent
             # Create and log the IncomingUserEvent
             user_event = IncomingUserEvent(
                 user_id=user_id,
@@ -158,13 +158,13 @@ class SlackBot:
         Returns:
             The agent's response text.
         """
-        response = client.chat_postMessage(channel=channel_id, text="Processing your request, please wait...")
+        response = client.chat_postMessage(channel=channel_id, text="Working on it...")
         ts = response.data['ts']
         user_info, user_real_name = self.fetch_user_info(client, user_id)
         agent_input = self.prepare_agent_input(event, user_real_name)
 
         # Get the generator from run_core_agent
-        agent_response_generator = run_core_agent(user_id=user_id, user_message=str(agent_input))
+        agent_response_generator = run_core_agent(user_name=user_real_name, message=agent_input['message'])
 
         # Collect all responses from the generator
         agent_response_text = ""
@@ -186,8 +186,8 @@ class SlackBot:
         """
         # Here you would implement the actual logging logic
         # This could involve sending the event to a database, logging service, etc.
-        logging.info(f"User Event Logged: {event.dict()}")
-        print(f"User Event Logged: {event.dict()}")
+        logging.info(f"User Event Logged: {event.model_dump()}")
+        print(f"User Event Logged: {event.model_dump()}")
 
     def update_user_event_satisfaction(self, user_id: str, satisfaction: str) -> None:
         """
