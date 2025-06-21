@@ -80,9 +80,9 @@ class TestSlackBot(unittest.TestCase):
         mock_client = MagicMock()
         mock_client.chat_postMessage.return_value = MagicMock(data={'ts': '123456789.1234'})
         mock_fetch_user_info.return_value = ({'user': {'real_name': 'Test User'}}, 'Test User')
-        # Mock run_core_agent to return a generator that yields (content, run_id) on first yield
+        # Mock run_core_agent to return a generator that yields content strings
         def mock_generator():
-            yield ("Hello! How can I help you?", "test_run_id_123")
+            yield "Hello! How can I help you?"
         mock_run_core_agent.return_value = mock_generator()
         
         event = {'text': 'Test message', 'user': 'U12345'}
@@ -93,8 +93,6 @@ class TestSlackBot(unittest.TestCase):
         
         self.assertIsInstance(response, str)
         mock_send_response.assert_called()
-        # Verify that run_id was stored
-        self.assertEqual(self.slack_bot.user_run_ids[user_id], "test_run_id_123")
 
     @patch('TARS.surfaces.slack.slack_app.SlackBot.handle_direct_message')
     @patch('TARS.surfaces.slack.slack_app.SlackBot.fetch_user_info')
