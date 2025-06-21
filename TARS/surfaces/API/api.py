@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+import uuid
 
 import aiohttp
 import requests
@@ -7,7 +8,8 @@ from TARS.config.config import github_oauth_settings
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from TARS.graphs.core_agent import run_core_agent
-from langsmith import traceable
+from langsmith import traceable, Client
+from langsmith.run_helpers import get_current_run_tree
 from TARS.metrics.event_instrumentation import IncomingUserEvent
 from pydantic import BaseModel
 from starlette.responses import Response
@@ -24,11 +26,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Global storage for user run IDs (in production, use a proper database)
+user_run_ids = {}
+langsmith_client = Client()
 
 def setup_routes():
     """Setup all API routes and their handlers."""
     app.post("/chat")(handle_chat_request)
     app.post("/chat_github")(handle_github_chat_request)
+    app.post("/feedback")(handle_feedback_request)
     app.get("/test")(handle_test_request)
     app.get("/auth/github/callback")(handle_github_oauth_callback)
 
@@ -40,6 +46,15 @@ class ChatRequest(BaseModel):
 
     message: str
     user_name: str = "Unknown User"
+
+
+class FeedbackRequest(BaseModel):
+    """
+    Pydantic model for feedback requests.
+    """
+    user_name: str
+    satisfaction_score: float  # Score between 0.0 and 1.0
+    comment: str = ""
 
 
 def log_user_event(event: IncomingUserEvent):
@@ -69,6 +84,12 @@ async def handle_chat_request(request: ChatRequest):
     
     try:
         logger.info(f"Received request: {request}")
+
+        # Capture run ID for feedback tracking
+        run_tree = get_current_run_tree()
+        run_id = run_tree.id if run_tree else str(uuid.uuid4())
+        user_run_ids[request.user_name] = run_id
+        logger.info(f"Captured Run ID: {run_id} for user {request.user_name}")
 
         # Create and log the IncomingUserEvent
         user_event = IncomingUserEvent(
@@ -114,7 +135,7 @@ async def handle_chat_request(request: ChatRequest):
             return {"response": "I apologize, but I didn't receive a proper response. Please try again."}
         
         logger.info("=== API CHAT ENDPOINT SUCCESS ===")
-        return {"response": agent_response_text}
+        return {"response": agent_response_text, "run_id": run_id}
         
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
@@ -339,6 +360,90 @@ async def validate_access_token_and_retrieve_user_info(access_token: str) -> dic
             return response.json()
         else:
             return None
+
+
+@traceable(name="API Feedback Endpoint")
+async def handle_feedback_request(request: FeedbackRequest):
+    """
+    Handle feedback requests and log them to LangSmith.
+
+    Args:
+        request (FeedbackRequest): The validated feedback request object.
+
+    Returns:
+        dict: Confirmation of feedback submission.
+    """
+    logger.info("=== API FEEDBACK ENDPOINT START ===")
+    
+    try:
+        logger.info(f"Received feedback request: {request}")
+        
+        # Validate satisfaction score
+        if not 0.0 <= request.satisfaction_score <= 1.0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Satisfaction score must be between 0.0 and 1.0"
+            )
+        
+        # Get the run_id for this user
+        run_id = user_run_ids.get(request.user_name)
+        logger.info(f"Looking up run_id for user {request.user_name}: {run_id}")
+        
+        if not run_id:
+            logger.warning(f"No run_id found for user {request.user_name}")
+            logger.info(f"Available user_run_ids: {list(user_run_ids.keys())}")
+            raise HTTPException(
+                status_code=404,
+                detail="No recent conversation found for this user. Please send a message first."
+            )
+        
+        feedback_key = "user_satisfaction"
+        
+        logger.info(f"Creating feedback - key: {feedback_key}, score: {request.satisfaction_score}, run_id: {run_id}")
+        
+        try:
+            # Create feedback in LangSmith
+            logger.info(f"Calling langsmith_client.create_feedback with:")
+            logger.info(f"  - key: {feedback_key}")
+            logger.info(f"  - score: {request.satisfaction_score}")
+            logger.info(f"  - run_id: {run_id}")
+            logger.info(f"  - comment: {request.comment}")
+            
+            feedback_result = langsmith_client.create_feedback(
+                key=feedback_key,
+                score=request.satisfaction_score,
+                run_id=run_id,
+                comment=request.comment
+            )
+            
+            logger.info(f"LangSmith create_feedback returned: {feedback_result}")
+            logger.info(f"Feedback logged successfully for user {request.user_name}: {feedback_key}={request.satisfaction_score}")
+            
+            logger.info("=== API FEEDBACK ENDPOINT SUCCESS ===")
+            return {
+                "status": "success",
+                "message": "Feedback submitted successfully",
+                "feedback_id": str(feedback_result.id) if hasattr(feedback_result, 'id') else None
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to create feedback: {e}", exc_info=True)
+            logger.error(f"Exception type: {type(e)}")
+            logger.error(f"Exception args: {e.args}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to submit feedback to LangSmith"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in feedback endpoint: {str(e)}", exc_info=True)
+        logger.info("=== API FEEDBACK ENDPOINT ERROR ===")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while processing feedback: {str(e)}"
+        )
 
 
 # Setup all routes
