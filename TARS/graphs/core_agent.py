@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generator
+from typing import Generator, Tuple
 import logging
 
 from TARS.config.config import GraphConfig
@@ -11,6 +11,7 @@ from TARS.graphs.utils.nodes import (
 from TARS.graphs.utils.state import AgentState
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
+from langsmith import trace
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ graph = workflow.compile()
 logger.info("Core agent graph compiled successfully")
 
 
-def run_core_agent(user_name: str, message: str) -> Generator[str, None, None]:
+def run_core_agent(user_name: str, message: str) -> Generator:
     """
     Run the core agent with the given user name and message.
 
@@ -54,7 +55,8 @@ def run_core_agent(user_name: str, message: str) -> Generator[str, None, None]:
         message (str): The message from the user
 
     Yields:
-        str: Each piece of the response as it becomes available
+        On the first yield: (content, run_id)
+        On subsequent yields: content
     """
     logger.info(f"=== CORE AGENT START ===")
     logger.info(f"Input - user_name: {user_name}, message: {message}")
@@ -68,35 +70,58 @@ def run_core_agent(user_name: str, message: str) -> Generator[str, None, None]:
         raise ValueError("Invalid input: message is None")
     
     try:
-
         logger.info("Inside run_core_agent try block")
         config: RunnableConfig = {"configurable": {"thread_id": user_name}}
         logger.info(f"Created config: {config}")
         
-        logger.info("Starting graph stream...")
-        events = graph.stream(
-            {"messages": [("user", message)]}, config=config, stream_mode="values"
-        )
-        logger.info("Successfully started graph stream")
+        def response_generator():
+            first = True
+            run_id = None
+            try:
+                with trace(name=f"TARS Agent - {user_name}") as tracer:
+                    run_id = tracer.id
+                    logger.info(f"Captured run_id from trace: {run_id}")
+                    logger.info(f"Trace URL: https://smith.langchain.com/traces/{run_id}")
+                    logger.info(f"Trace name: {tracer.name}")
+                    
+                    logger.info("Starting graph stream...")
+                    events = graph.stream(
+                        {"messages": [("user", message)]}, config=config, stream_mode="values"
+                    )
+                    logger.info("Successfully started graph stream")
 
-        event_count = 0
-        for event in events:
-            event_count += 1
-            logger.info(f"Processing event #{event_count}: {event}")
-            
-            if "messages" in event and event["messages"]:
-                last_message = event["messages"][-1]
-                logger.info(f"Extracting content from message: {last_message}")
-                content = last_message.content
-                logger.info(f"Yielding content: '{content}'")
-                yield content
-            else:
-                logger.warning(f"Event #{event_count} has no messages or empty messages: {event}")
+                    event_count = 0
+                    for event in events:
+                        event_count += 1
+                        logger.info(f"Processing event #{event_count}: {event}")
+                        
+                        if "messages" in event and event["messages"]:
+                            last_message = event["messages"][-1]
+                            logger.info(f"Extracting content from message: {last_message}")
+                            content = last_message.content
+                            logger.info(f"Yielding content: '{content}'")
+                            if first:
+                                yield (content, run_id)
+                                first = False
+                            else:
+                                yield content
+                        else:
+                            logger.warning(f"Event #{event_count} has no messages or empty messages: {event}")
 
-        logger.info(f"Completed processing {event_count} events")
-        logger.info("=== CORE AGENT SUCCESS ===")
-        
+                    logger.info(f"Completed processing {event_count} events")
+                    logger.info("=== CORE AGENT SUCCESS ===")
+            except Exception as e:
+                logger.error(f"Error in run_core_agent: {str(e)}", exc_info=True)
+                logger.info("=== CORE AGENT ERROR ===")
+                if first:
+                    yield (f"An error occurred in the core agent: {str(e)}", None)
+                else:
+                    yield f"An error occurred in the core agent: {str(e)}"
+
+        return response_generator()
     except Exception as e:
-        logger.error(f"Error in run_core_agent: {str(e)}", exc_info=True)
-        logger.info("=== CORE AGENT ERROR ===")
-        yield f"An error occurred in the core agent: {str(e)}"
+        logger.error(f"Error in run_core_agent setup: {str(e)}", exc_info=True)
+        logger.info("=== CORE AGENT SETUP ERROR ===")
+        def error_generator():
+            yield (f"An error occurred in the core agent setup: {str(e)}", None)
+        return error_generator()

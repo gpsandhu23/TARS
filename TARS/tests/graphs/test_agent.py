@@ -19,8 +19,8 @@ class TestCoreAgent(unittest.TestCase):
         user_name = "test_user_123"
         message = "What's the weather like today?"
         
-        # Get the generator
-        response_generator = run_core_agent(user_name, message)
+        # Get the generator and run_id
+        response_generator, run_id = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
@@ -29,11 +29,13 @@ class TestCoreAgent(unittest.TestCase):
         self.assertTrue(len(responses) > 0)
         self.assertIsInstance(responses[0], str)
         self.assertEqual(responses[0], "Test response")
+        # Verify run_id is returned (may be None in test environment)
+        self.assertIsInstance(run_id, (str, type(None)))
 
     def test_run_core_agent_invalid_input(self):
         # Test with None input
         with self.assertRaises(ValueError):
-            list(run_core_agent(None, "test_user"))
+            run_core_agent(None, "test_user")
 
     @patch('TARS.graphs.core_agent.graph')
     def test_run_core_agent_empty_response(self, mock_graph):
@@ -43,14 +45,16 @@ class TestCoreAgent(unittest.TestCase):
         user_name = "test_user_123"
         message = "Test message"
         
-        # Get the generator
-        response_generator = run_core_agent(user_name, message)
+        # Get the generator and run_id
+        response_generator, run_id = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
         
         # Should handle empty response gracefully
         self.assertEqual(len(responses), 0)
+        # Verify run_id is returned (may be None in test environment)
+        self.assertIsInstance(run_id, (str, type(None)))
 
     @patch('TARS.graphs.core_agent.graph')
     def test_run_core_agent_exception_handling(self, mock_graph):
@@ -60,8 +64,8 @@ class TestCoreAgent(unittest.TestCase):
         user_name = "test_user_123"
         message = "Test message"
         
-        # Get the generator
-        response_generator = run_core_agent(user_name, message)
+        # Get the generator and run_id
+        response_generator, run_id = run_core_agent(user_name, message)
         
         # Collect all responses
         responses = list(response_generator)
@@ -69,3 +73,5 @@ class TestCoreAgent(unittest.TestCase):
         # Should return error message
         self.assertTrue(len(responses) > 0)
         self.assertIn("error", responses[0].lower())
+        # Verify run_id is None when there's an error
+        self.assertIsNone(run_id)

@@ -25,6 +25,14 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 
+def setup_routes():
+    """Setup all API routes and their handlers."""
+    app.post("/chat")(handle_chat_request)
+    app.post("/chat_github")(handle_github_chat_request)
+    app.get("/test")(handle_test_request)
+    app.get("/auth/github/callback")(handle_github_oauth_callback)
+
+
 class ChatRequest(BaseModel):
     """
     Pydantic model for chat requests.
@@ -47,8 +55,7 @@ def log_user_event(event: IncomingUserEvent):
 
 
 @traceable(name="API Chat Endpoint")
-@app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+async def handle_chat_request(request: ChatRequest):
     """
     Handle chat requests and forward them to the core agent.
 
@@ -156,8 +163,7 @@ async def verify_github_token(request: Request, x_github_token: str = Header(Non
 
 
 @traceable(name="API GitHub Chat Endpoint")
-@app.post("/chat_github")
-async def chat_endpoint(
+async def handle_github_chat_request(
     request: Request, github_token: str = Depends(verify_github_token)
 ):
     """
@@ -217,8 +223,8 @@ async def chat_endpoint(
             )
 
 
-@app.get("/test")
-async def test_endpoint():
+@traceable(name="API Test Endpoint")
+async def handle_test_request():
     """
     A simple test endpoint to check if the API is working.
 
@@ -228,8 +234,8 @@ async def test_endpoint():
     return {"message": "Hola! Welcome to our API!"}
 
 
-@app.get("/auth/github/callback")
-async def github_oauth_callback(request: Request):
+@traceable(name="API GitHub OAuth Callback")
+async def handle_github_oauth_callback(request: Request):
     """
     Handle the GitHub OAuth callback.
 
@@ -279,6 +285,7 @@ async def github_oauth_callback(request: Request):
     return {"status": "success", "user_info": user_info, "user_token": access_token}
 
 
+@traceable(name="API Exchange Code for Access Token")
 async def exchange_code_for_access_token(
     code: str, client_id: str, client_secret: str
 ) -> str:
@@ -310,6 +317,7 @@ async def exchange_code_for_access_token(
             return None
 
 
+@traceable(name="API Validate Access Token and Retrieve User Info")
 async def validate_access_token_and_retrieve_user_info(access_token: str) -> dict:
     """
     Validate the GitHub access token and retrieve user information.
@@ -331,3 +339,7 @@ async def validate_access_token_and_retrieve_user_info(access_token: str) -> dic
             return response.json()
         else:
             return None
+
+
+# Setup all routes
+setup_routes()

@@ -4,7 +4,7 @@ from TARS.config.config import slack_settings
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from langsmith import traceable
+from langsmith import traceable, Client
 from TARS.graphs.core_agent import run_core_agent
 from TARS.metrics.event_instrumentation import IncomingUserEvent
 from datetime import datetime, timezone
@@ -27,6 +27,8 @@ class SlackBot:
         self.chat_history: list = []
         # self.agent_manager: AgentManager = AgentManager()
         self.initialize_slack_app()
+        self.user_run_ids = {}  # user_id -> run_id
+        self.langsmith_client = Client()  # Initialize LangSmith client
 
     def setup_logging(self) -> None:
         """
@@ -48,6 +50,7 @@ class SlackBot:
                 signing_secret=slack_settings.slack_signing_secret
             )
             self.app.event("message")(self.process_message)
+            self.app.event("reaction_added")(self.handle_reaction)  # Add reaction handler
             logging.info("Slack app initialized successfully.")
         except Exception as e:
             logging.error(f"Failed to initialize Slack App: {e}")
@@ -168,8 +171,26 @@ class SlackBot:
 
         # Collect all responses from the generator
         agent_response_text = ""
+        first_response = True
+        
         for response_part in agent_response_generator:
-            agent_response_text += response_part
+            if first_response:
+                # First yield is (content, run_id)
+                if isinstance(response_part, tuple) and len(response_part) == 2:
+                    content, run_id = response_part
+                    # Store the run_id in memory for this user
+                    self.user_run_ids[user_id] = run_id
+                    logging.info(f"Stored run_id '{run_id}' for user '{user_id}'")
+                    logging.info(f"Current user_run_ids: {self.user_run_ids}")
+                    agent_response_text += content
+                else:
+                    # Fallback if not a tuple
+                    agent_response_text += response_part
+                first_response = False
+            else:
+                # Subsequent yields are just content
+                agent_response_text += response_part
+            
             # Optionally, you can update the message in real-time as parts come in
             self.send_response(client, channel_id, ts, agent_response_text)
 
@@ -217,6 +238,73 @@ class SlackBot:
             client.chat_postMessage(channel=channel_id, text=remaining_parts)
         else:
             client.chat_update(channel=channel_id, ts=ts, text=text)
+
+    def handle_reaction(self, event: Dict[str, Any], client: Any) -> None:
+        """
+        Handle reaction events for feedback collection.
+
+        Args:
+            event: The Slack reaction event dictionary.
+            client: The Slack client object.
+        """
+        logging.info(f"=== REACTION HANDLER START ===")
+        logging.info(f"Received reaction event: {event}")
+        
+        user_id = event.get('user')
+        reaction = event.get('reaction')
+        
+        logging.info(f"Extracted user_id: {user_id}")
+        logging.info(f"Extracted reaction: {reaction}")
+        
+        # Log ALL reactions for debugging
+        logging.info(f"Processing reaction: '{reaction}' (type: {type(reaction)})")
+        
+        # Only process thumbs up/down reactions
+        if reaction not in ['+1', '-1']:
+            logging.info(f"Reaction '{reaction}' not in ['+1', '-1'], ignoring")
+            logging.info(f"Available user_run_ids: {list(self.user_run_ids.keys())}")
+            return
+            
+        logging.info(f"Processing valid reaction: {reaction}")
+        
+        # Get the run_id for this user
+        run_id = self.user_run_ids.get(user_id)
+        logging.info(f"Looking up run_id for user {user_id}: {run_id}")
+        
+        if not run_id:
+            logging.warning(f"No run_id found for user {user_id}")
+            logging.info(f"Available user_run_ids: {list(self.user_run_ids.keys())}")
+            return
+            
+        # Map reaction to score
+        score = 1 if reaction == '+1' else 0
+        feedback_key = "user_satisfaction"
+        
+        logging.info(f"Creating feedback - key: {feedback_key}, score: {score}, run_id: {run_id}")
+        
+        try:
+            # Create feedback in LangSmith
+            logging.info(f"Calling langsmith_client.create_feedback with:")
+            logging.info(f"  - key: {feedback_key}")
+            logging.info(f"  - score: {score}")
+            logging.info(f"  - run_id: {run_id}")
+            logging.info(f"  - comment: User reacted with {reaction}")
+            
+            feedback_result = self.langsmith_client.create_feedback(
+                key=feedback_key,
+                score=score,
+                run_id=run_id,
+                comment=f"User reacted with {reaction}"
+            )
+            
+            logging.info(f"LangSmith create_feedback returned: {feedback_result}")
+            logging.info(f"Feedback logged successfully for user {user_id}: {feedback_key}={score}")
+        except Exception as e:
+            logging.error(f"Failed to create feedback: {e}", exc_info=True)
+            logging.error(f"Exception type: {type(e)}")
+            logging.error(f"Exception args: {e.args}")
+        
+        logging.info("=== REACTION HANDLER END ===")
 
     def start(self) -> None:
         """
